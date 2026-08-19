@@ -55,6 +55,13 @@ Check:
 - is there any obvious performance problem?
 - is `current-task.md` updated and accurate?
 
+Checks guidance:
+
+- Reviewers must verify that linting/style checks pass for the changed files. Prefer running the project's preferred lint/test runner (from project-context.md). When Bun is the preferred runtime, prefer `bun`-based commands.
+- If the repository defines a verification script named `aislop`, the reviewer should run it (e.g. `bun run aislop`) to ensure the change did not introduce issues. Only run `aislop` when it is explicitly present in the project.
+
+See `.agents/references.md` for concrete commands and a safe example script to run checks only on changed/new files. If `.agents/scripts/run_checks_changed.sh` exists, reviewers should prefer using it to ensure consistent behavior.
+
 ## Verdicts
 
 Use one of these, with this exact meaning:
@@ -104,7 +111,12 @@ Changes required:
 - <file/behavior to change>
 - <file/behavior to change>
 Test: <the test to add or fix, and why it fails/does not exist>
-Command: <smallest relevant test command>
+    Command: <smallest relevant test command>
+
+Command selection guidance:
+
+- When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer the reviewer to state `bun`-based commands (e.g. `bun test`, `bun run <script>`) as the expected command to run.
+- If the repository's preferred runtime/tooling differs or is ambiguous, the reviewer must reference `project-context.md` or ask the user before asserting a command. Do not override an explicit project preference.
 Do not: <unrelated changes to avoid>
 ---
 ```

@@ -1,52 +1,60 @@
-# References
 
-Use these references only when exact behavior is uncertain.
+# References: targeted checks and the `aislop` script
 
-Do not read everything by default.
+Purpose: provide safe, reproducible commands to detect/run a project verification script named `aislop` (if present) and to run lint/style checks only on changed or newly added files — not on the whole repository.
 
-## Agent workflow
+1) Detecting the presence of `aislop`
 
-- OpenCode skills:
-  https://dev.opencode.ai/docs/fr/skills/
+- Check package.json for a script named `aislop`:
 
-- OpenAI Codex `AGENTS.md`:
-  https://github.com/openai/codex/blob/main/docs/agents_md.md
+  grep -q '"aislop"' package.json && echo "aislop found"
 
-## Testing
+- Or check `.agents/project-context.md` if `init-project` populated it: look for `aislop` or `verification script` entries.
 
-- Vitest:
-  https://vitest.dev/guide/
+2) Running `aislop` (if present)
 
-- Bun test:
-  https://bun.sh/docs/cli/test
+- Preferred command by runner:
 
-- Rust Cargo test:
-  https://doc.rust-lang.org/cargo/commands/cargo-test.html
+  - Bun: bun run aislop
+  - npm/pnpm/yarn: npm run aislop  # or pnpm run aislop / yarn run aislop
 
-## Languages
+- Only run `aislop` if you have explicitly detected it (package.json scripts or project-context.md).
 
-- TypeScript:
-  https://www.typescriptlang.org/docs/
+3) Running lint / checks only on changed/new files
 
-- Rust:
-  https://doc.rust-lang.org/book/
+Rule: consider staged files + unstaged changes + untracked files. Filter by relevant extensions (e.g. .js .ts .tsx .jsx .mjs .cjs) and pass the list to the linter or lint script.
 
-- Zig:
-  https://ziglang.org/documentation/master/
+Example portable sequence (bash):
 
-## Frontend
+  CHANGED_STAGED=$(git diff --name-only --staged || true)
+  CHANGED_UNSTAGED=$(git diff --name-only || true)
+  UNTRACKED=$(git ls-files --others --exclude-standard || true)
+  FILES=$(printf "%s\n%s\n%s" "$CHANGED_STAGED" "$CHANGED_UNSTAGED" "$UNTRACKED" | sort -u | grep -E '\\.(js|ts|tsx|jsx)$' || true)
+  if [ -n "$FILES" ]; then
+    # Use the project's lint script via the preferred runner
+    # Bun: bun run lint -- $FILES
+    # npm/pnpm/yarn: npm run lint -- $FILES
+    echo "$FILES" | xargs -r bun run lint --
+  else
+    echo "No modified or new JS/TS files to lint."
+  fi
 
-- React:
-  https://react.dev/
+Notes:
+- Replace `bun run lint` with `npm run lint` or `pnpm run lint` if the project prefers those tools.
+- The `--` flag passes file paths to the npm/bun script (if your lint script is based on eslint or similar). If the script does not accept file arguments, adapt accordingly (e.g. configure a `lint:staged` script or call `eslint --fix $FILES`).
 
-- Solid:
-  https://docs.solidjs.com/
+4) Targeted tests (optional)
 
-## Rule
+- For Jest, you can run only tests related to changed files:
 
-Open external references only when:
+  npx jest --findRelatedTests $(git diff --name-only --staged)
 
-- the project uses that tool or language
-- exact API behavior matters
-- the local project files are not enough
-- the implementation would otherwise rely on guessing
+- For other runners (Vitest, etc.), check if they offer an equivalent option (e.g. `--changed` or pattern-based). If not, running only affected unit tests may require running the full test suite.
+
+5) Operational rules for agents/skills
+
+- Only run `aislop` when it is explicitly present.
+- Do not lint the whole repository by default: target only changed/new files as shown above.
+- Always use the preferred runner indicated in `.agents/project-context.md` (pref: `bun` if detected).
+
+If you want, I can also add a small utility script under `.agents/` (e.g. `.agents/scripts/run_checks_changed.sh`) that encapsulates these steps for the agents. Should I add it?

@@ -80,11 +80,23 @@ For the active issue:
 3. Inspect only directly relevant files.
 4. Write or update one failing test first.
 5. Run the smallest relevant test command.
+
+Command selection guidance:
+
+- When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer running tests and scripts with `bun` (e.g. `bun test`, `bun run <script>`) rather than node/npm/pnpm/yarn. Do not change the project's declared preference if it explicitly uses a different manager.
+- If the detected project tooling is ambiguous, do not guess — consult the user or `plan-code`/`init-project` output (project-context.md) before choosing a command.
 6. Confirm the test fails for the expected reason.
 7. Implement the smallest change.
 8. Run the test again.
 9. Refactor only if needed for clarity.
 10. Run the relevant checks.
+
+Checks guidance:
+
+- After the test is green, run linting and style checks at least on the changed files (not necessarily the whole repo) to catch formatting, typing, or obvious issues introduced by the change. Use the project's preferred command from `project-context.md` (for JS/TS, prefer `bun`-based commands when Bun is the preferred runtime).
+- If the project defines a verification script named `aislop` (a project-local script listed in package.json or documented in project-context.md), run it as part of the checks to ensure no accidental issues were introduced (e.g. `bun run aislop` or the preferred runner). Do not invent or run unknown scripts; only run `aislop` when it is explicitly present.
+
+See `.agents/references.md` for concrete commands and a safe example script to run checks only on changed/new files. If `.agents/scripts/run_checks_changed.sh` exists, prefer using it to ensure consistent behavior across agents.
 11. Update `.agents/state/current-task.md`.
 12. Stop.
 

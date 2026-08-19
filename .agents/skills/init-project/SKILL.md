@@ -19,6 +19,7 @@ Before doing anything else, read this SKILL.md in full.
 
 - Inspect the repository.
 - Detect languages, tools, test commands, and conventions.
+  - Special-case: when `bun.lock` (or clear Bun indicators) is present, record Bun as the preferred runtime/tooling and prefer `bun` commands when listing detected commands.
 - Detect key libraries and their public types/APIs.
 - Respect existing `AGENTS.md`.
 - Create the `.agents/` workspace if missing.
@@ -101,8 +102,11 @@ Create:
 `project-context.md` must include:
 
 - detected stack and tooling
+- preferred runtime/tooling (e.g. `bun`, `node`/`npm`/`pnpm`, `python`, `rust`)
 - test commands, lint commands, and conventions
 - **key libraries and their core types/APIs** — list each major dependency, its public types, and idiomatic patterns so `plan-code` and `implement-tdd` know what to reuse
+
+Note: when `bun.lock` or other Bun indicators are present, set `preferred runtime/tooling: bun` and list `bun`-based commands (e.g. `bun test`, `bun run <script>`) as the primary commands.
 
 ## Detect key libraries
 
@@ -145,6 +149,8 @@ If `AGENTS.md` is missing:
 - do not create unrelated docs
 - do not overwrite existing files
 - do not guess commands when ambiguous
+
+If detection finds Bun (e.g. `bun.lock`), prefer Bun and record it in `project-context.md` rather than guessing another tool.
 
 ## Output
 
