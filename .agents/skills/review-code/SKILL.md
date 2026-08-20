@@ -26,13 +26,9 @@ Before doing anything else, read this SKILL.md in full.
 
 ## Must read first
 
-1. `AGENTS.md`
-2. `.agents/agent-rules.md`
-3. `.agents/project-context.md`
-4. `.agents/state/current-task.md`
-5. active plan file
-6. active issue file
-7. current diff
+Follow the shared startup read order in `.agents/agent-rules.md`. In addition, read:
+
+- current diff
 
 ## Review checklist
 
@@ -54,11 +50,26 @@ Check:
 - is there unrelated refactor?
 - is there any obvious performance problem?
 - is `current-task.md` updated and accurate?
+- if `aislop` was scanned, did the score regress versus baseline?
+- is the diff within the size budget (see below)?
+
+## Diff size budget
+
+Default budget: more than 6 changed files, or more than 150 changed lines
+excluding test files, is over budget for a single issue.
+
+- Over budget and the issue's plan/acceptance criteria justify it: note it, do
+  not block on size alone.
+- Over budget with no justification in the plan: verdict `NEEDS CHANGES`,
+  recommend splitting into a follow-up issue.
+- The project may override this budget in `project-context.md`; use that value
+  instead when present.
 
 Checks guidance:
 
 - Reviewers must verify that linting/style checks pass for the changed files. Prefer running the project's preferred lint/test runner (from project-context.md). When Bun is the preferred runtime, prefer `bun`-based commands.
-- If the repository defines a verification script named `aislop`, the reviewer should run it (e.g. `bun run aislop`) to ensure the change did not introduce issues. Only run `aislop` when it is explicitly present in the project.
+- If the `aislop` MCP tool set is available in this session, run a scan and compare the resulting score against the recorded baseline (`project-context.md`, or fetch it directly). A drop in score is a review finding, not something to silently ignore. Use the "why" tool to explain any finding whose message alone is not actionable enough to put in the handoff prompt.
+- If the `aislop` MCP tool set is not available, fall back to a project-local script named `aislop` only if explicitly present (e.g. `bun run aislop`).
 
 See `.agents/references.md` for concrete commands and a safe example script to run checks only on changed/new files. If `.agents/scripts/run_checks_changed.sh` exists, reviewers should prefer using it to ensure consistent behavior.
 

@@ -32,6 +32,10 @@ Before doing anything else, read this SKILL.md in full.
 3. `README.md` if present
 4. root config files
 
+(There is no `project-context.md` yet — this skill creates it. The shared
+startup read order in `.agents/agent-rules.md` applies to all other skills once
+this one has run.)
+
 ## Detect, do not assume
 
 Look for config files across stacks.
@@ -82,6 +86,25 @@ Example:
 
 > I found both `bun.lock` and `pnpm-lock.yaml`. Which package manager should this project prefer?
 
+## Detect monorepo structure
+
+Check for workspace indicators before assuming a single flat project:
+
+- `package.json` with a `workspaces` field
+- `pnpm-workspace.yaml`
+- `Cargo.toml` with a `[workspace]` table
+- multiple `package.json`/`Cargo.toml` files under distinct top-level directories
+
+If any are found, do not silently produce one flat `project-context.md` that
+mixes all packages' tooling and dependencies. Ask the user:
+
+> This looks like a monorepo with packages: <list>. Should I document one
+> shared `project-context.md`, or a separate context per package?
+
+Only proceed with a single flat context if the user confirms it, or if the
+workspace is trivially small and shares one toolchain (note that assumption in
+`project-context.md`).
+
 ## Create if missing
 
 Create:
@@ -97,6 +120,29 @@ Create:
    └─ current-task.md
 ```
 
+Also scaffold, if missing, the companion permission-enforced agent files:
+
+```text
+.opencode/agent/
+├─ plan-code.md
+├─ implement-tdd.md
+├─ review-code.md
+└─ init-project.md
+```
+
+Copy these from this fafa-skills repository's own `.opencode/agent/` files
+verbatim (they define `permission` rules — e.g. `plan-code` denies `edit` and
+`bash` beyond read-only git inspection, `review-code` denies `edit` — so the
+workflow's guardrails are enforced by the runtime in the target project, not
+only documented in prose). Also copy the root `opencode.json` snippet
+(`instructions: [".agents/agent-rules.md"]`), merging it into the target
+project's existing `opencode.json` if one already exists rather than
+overwriting it.
+
+Do not scaffold these agent files if the target project already has its own
+`.opencode/agent/` definitions for these names — ask the user whether to merge
+or skip instead of overwriting.
+
 ## project-context.md content
 
 `project-context.md` must include:
@@ -105,6 +151,23 @@ Create:
 - preferred runtime/tooling (e.g. `bun`, `node`/`npm`/`pnpm`, `python`, `rust`)
 - test commands, lint commands, and conventions
 - **key libraries and their core types/APIs** — list each major dependency, its public types, and idiomatic patterns so `plan-code` and `implement-tdd` know what to reuse
+- **aislop baseline** (see below)
+
+## aislop baseline
+
+The `aislop` MCP tool is independent of the project's language or package
+manager — it does not require a `package.json` script. If the `aislop`
+tool set is available in this session:
+
+1. Call the baseline tool. If no baseline exists, run a scan and capture the
+   resulting score as the initial baseline (follow the tool's own instructions
+   to persist it, e.g. `aislop hook baseline`).
+2. Record in `project-context.md`: baseline score, date captured, and that
+   `review-code` should compare against it.
+
+Do not invent an `aislop` npm/bun script check — that legacy path only applies
+when the MCP tool set is not available in the session. If the MCP tool set is
+unavailable, fall back to detecting a `package.json` script named `aislop`.
 
 Note: when `bun.lock` or other Bun indicators are present, set `preferred runtime/tooling: bun` and list `bun`-based commands (e.g. `bun test`, `bun run <script>`) as the primary commands.
 
@@ -159,7 +222,9 @@ Return:
 - detected stack
 - detected commands
 - key libraries listed in project-context.md
+- aislop baseline score, if captured
 - files created
 - files preserved
+- `.opencode/agent/*.md` files scaffolded or skipped (and why)
 - ambiguous choices, if any
 - recommended next skill

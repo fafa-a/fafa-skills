@@ -2,7 +2,7 @@
 
 ## Status
 
-NONE | READY | IN_PROGRESS | BLOCKED | DONE
+NONE | AWAITING_APPROVAL | READY | IN_PROGRESS | BLOCKED | DONE
 
 ## Active Plan
 
@@ -35,5 +35,13 @@ NONE | READY | IN_PROGRESS | BLOCKED | DONE
 -
 
 ## Notes
+
+-
+
+## Approval
+
+Approval Status: NOT_REQUESTED | AWAITING_APPROVAL | APPROVED | INVALIDATED
+
+Approval Record:
 
 -

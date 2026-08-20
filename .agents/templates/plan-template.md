@@ -4,6 +4,17 @@
 
 DRAFT | READY | BLOCKED | DONE
 
+## Approval
+
+Approval Status: AWAITING_APPROVAL | APPROVED | INVALIDATED
+
+Approval Record:
+
+- No implementation approval recorded.
+
+Implementation may not start until the user explicitly approves this plan and
+the selected issue set.
+
 ## Mini PRD
 
 ### Problem
@@ -26,7 +37,29 @@ DRAFT | READY | BLOCKED | DONE
 
 -
 
+## Reconnaissance
+
+### Observed
+
+-
+
+### Likely Impact
+
+-
+
+### Unknown
+
+-
+
+### Files Inspected
+
+-
+
 ## Blocking Questions
+
+-
+
+## Decisions Locked
 
 -
 

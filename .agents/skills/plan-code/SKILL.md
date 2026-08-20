@@ -1,15 +1,16 @@
 ---
 name: plan-code
-description: Clarify a code task, read relevant docs, write a mini PRD, and split it into small TDD issues without coding.
+description: Aggressively clarify a code task by scanning the relevant files first, write an evidence-based mini PRD, and split it into small TDD issues without coding.
 ---
 
 # Plan Code
 
 Use this skill before implementation.
 
-This is the thinking skill.
+This is the thinking and specification skill. It ends at an explicit approval
+request; implementation runs in a fresh agent session.
 
-It must not write product code.
+It must not write product code, tests, or configuration.
 
 ## First: read this file
 
@@ -23,6 +24,7 @@ This skill plans, clarifies, and splits work. It never writes product code, test
 
 `plan-code` combines:
 
+- targeted repository reconnaissance before clarification
 - grill-me style clarification (challenge the user's thinking)
 - docs-aware planning
 - mini PRD
@@ -46,15 +48,51 @@ with one compact workflow.
 - Do not install dependencies.
 - Do not create huge plans.
 - Do not split work into fake issues.
+- Do not create a plan or issue files before the user answers the blocking questions.
+- Do not mark a plan ready for implementation without explicit user approval.
+- Do not interpret silence, a generic acknowledgement, or a request to continue as approval.
 
 ## Must read first
 
-1. `AGENTS.md`
-2. `.agents/agent-rules.md`
-3. `.agents/project-context.md`
-4. `.agents/references.md` only if needed
-5. directly relevant source/config files
-6. library dependency files (`package.json`, `Cargo.toml`, etc.) for relevant deps
+Follow the shared startup read order in `.agents/agent-rules.md` (skip plan/issue
+files — there is no active task yet). In addition, read:
+
+- `.agents/references.md` only if needed
+- library dependency files (`package.json`, `Cargo.toml`, etc.) for relevant deps
+
+## Phase 0: evidence-first reconnaissance
+
+Before asking questions, inspect the repository area implicated by the request.
+Use the user's nouns, paths, symbols, commands, and error messages to locate:
+
+1. the entry points and callers
+2. the relevant implementation and tests
+3. configuration, schemas, migrations, and persistence boundaries
+4. adjacent code that may be affected by the requested behavior
+5. existing conventions and available library APIs
+
+Do not scan the whole repository by default. Start with targeted file search and
+content search, then read the smallest set of relevant files deeply enough to
+state current behavior. If a named file or symbol does not exist, report that
+fact and ask whether it is new work. Questions must be based on this evidence,
+not on generic checklists.
+
+### Delegate wide searches
+
+Do not burn your own context doing broad exploration. Delegate:
+
+- broad "where does X live / how does Y work" searches to the `explore`
+  subagent (read-only, fast) via the `task` tool
+- external library/dependency research (unclear API, upstream source,
+  version-specific behavior) to the `scout` subagent via the `task` tool
+
+Keep your own reads focused on the small set of files you need to state
+current behavior precisely and to draft questions. Use the subagents' returned
+summaries, not their full search trails, in your reconnaissance note.
+
+Record a short reconnaissance note in your working context before questioning:
+`Observed`, `Likely impact`, `Unknown`, and `Files inspected`. Do not write it
+to the plan yet; the plan does not exist until clarification is complete.
 
 ## Inspect available libraries
 
@@ -77,27 +115,49 @@ Example output:
 
 The main goal is to help the user discover blind spots in their own thinking.
 
-Before writing any plan, challenge the request by asking probing questions.
+After reconnaissance, challenge the request by asking probing questions. Ask
+before creating or updating any plan, issue, or current-task file.
 
-### What to challenge
+Read `.agents/skills/plan-code/clarification-checklist.md` for what to
+challenge and what to avoid.
 
-- **Why** — is this the right problem to solve? What happens if we do nothing?
-- **Edge cases** — what breaks? error states? empty states? concurrency?
-- **Scope** — is the user over-engineering? can it be simpler?
-- **Alternatives** — is there a completely different approach worth considering?
-- **Trade-offs** — what does the user give up? performance? maintainability? flexibility?
-- **Assumptions** — what is the user taking for granted that might not be true?
-- **Ripple effects** — what else in the codebase will need to change?
-- **Testability** — how do you prove this works? what is hard to test?
+### Question depth: risk-based, not vibes-based
+
+Use the aggressive mode (5-10 decision-forcing questions) if reconnaissance
+shows ANY of:
+
+- touches authentication, authorization, or permission checks
+- touches payment, billing, or money-affecting logic
+- touches a public API contract (breaking change risk)
+- involves a data migration or irreversible data change
+- touches more than one service/module boundary
+- security-sensitive I/O (file paths, shell commands, deserialization, SQL)
+
+Use the light mode (1-2 questions, or zero if truly unambiguous) only when
+reconnaissance proves ALL of:
+
+- single file or single narrow module
+- no schema/data/API contract change
+- fully reversible (a revert has no side effects)
+- behavior described by the user matches what the code already does elsewhere
+
+If reconnaissance is inconclusive about which bucket applies, default to the
+aggressive mode.
 
 ### How to question
 
 - Be direct. Challenge concretely, do not list generic categories.
 - Reference user's actual words, not abstract templates.
-- Ask 3-7 targeted questions. Stop when the user's thinking feels solid.
-- If the request is already narrow and well-scoped, 1-2 questions may suffice.
+- Make questions decision-forcing: present the concrete choice and its impact
+  where possible. Include boundary cases, failure behavior, compatibility,
+  security, data migration, observability, and rollback questions when relevant.
+- Cite the inspected file/symbol that triggered each question.
+- Stop only when every decision that changes behavior, scope, data, or API is
+  answered or explicitly delegated to an assumption the user accepts.
 - Do not ask questions you could answer yourself by reading the codebase.
-- Ask all questions in one message, then proceed to plan after answers.
+- Ask all currently discoverable questions in one message. If an answer reveals
+  a new affected area, scan that area before asking the next question.
+- Do not proceed to planning while blocking questions remain unanswered.
 
 ### After questioning
 
@@ -106,74 +166,14 @@ Every unresolved point becomes either:
 - an explicit assumption recorded in the plan
 - something the user confirmed and is now locked in
 
-### What not to do
-
-- Do not ask lazy questions ("are you sure?")
-- Do not philosophize ("what is quality?")
-- Do not list risks without a concrete question
-- Do not ask about obvious things already answered by the codebase
+If answers materially change scope, repeat targeted reconnaissance and surface
+the delta before drafting the plan.
 
 ## Planning modes
 
-Choose one mode.
-
-### Bugfix
-
-Use when fixing broken behavior.
-
-Plan must include:
-
-- current behavior
-- expected behavior
-- reproduction path
-- likely cause
-- regression test strategy
-- minimal fix path
-
-### Feature
-
-Use when adding behavior.
-
-Plan must include:
-
-- user need
-- expected behavior
-- non-goals
-- acceptance criteria
-- TDD issue breakdown
-
-### Refactor
-
-Use when behavior should stay the same.
-
-Plan must include:
-
-- behavior that must not change
-- safety tests
-- refactor boundary
-- rollback risk
-
-### Test-only
-
-Use when adding missing tests.
-
-Plan must include:
-
-- behavior to protect
-- test cases
-- no product-code changes unless required
-
-### Spike
-
-Use when uncertainty is high.
-
-Plan must include:
-
-- question to answer
-- files to inspect
-- time/size boundary
-- expected output
-- no production implementation
+Choose one mode, then read only that mode's section in
+`.agents/skills/plan-code/modes.md`: Bugfix, Feature, Refactor, Test-only, or
+Spike.
 
 ## Docs-aware behavior
 
@@ -191,6 +191,14 @@ Use docs when:
 ## Plan file structure
 
 Every plan must include a `## Available library types/APIs` section listing key types, functions, and patterns from dependencies relevant to the task.
+
+Every plan must also include:
+
+- `## Reconnaissance` with observed current behavior and inspected files
+- `## Decisions Locked` with the user's answers
+- `## Approval` with `Status: AWAITING_APPROVAL`, approval scope, and the exact
+  instruction that implementation must wait for explicit approval
+- concrete file/symbol references for each issue
 
 ## Mini PRD
 
@@ -242,6 +250,31 @@ Write or update:
 .agents/state/current-task.md
 ```
 
+Write these files only after clarification is complete. Set:
+
+- plan `Status: READY` and `Approval Status: AWAITING_APPROVAL`
+- current task `Status: AWAITING_APPROVAL`
+- issue statuses `TODO`
+
+The active issue is selected for implementation, but is not authorized to run.
+The user must explicitly approve the plan and issue set, for example:
+`APPROVED: implement plan <task-slug>, starting with issue 1`.
+Record the exact approval and date in the plan and set current task status to
+`READY` only after receiving it. A changed plan, issue list, or scope invalidates
+the approval and returns the task to `AWAITING_APPROVAL`.
+
+## Session boundary
+
+Do not hand off to `implement-tdd` in the current conversation. After the plan
+and issues are written, tell the user to open another terminal/session and run
+the implementation agent there, providing the plan slug and active issue. This
+keeps planning evidence and implementation context separate.
+
+Do not update `.agents/project-context.md` for task-specific discoveries by
+default. Preserve important discoveries in the plan under `Reconnaissance` and
+`Available library types/APIs`. A later workflow can promote a discovery to
+project context only when it is durable and useful beyond this task.
+
 ## current-task behavior
 
 Initialize `.agents/state/current-task.md` with:
@@ -260,6 +293,9 @@ Return only:
 - issue file path
 - active issue
 - blocking questions, if any
-- next recommended skill
+- approval status (always explicit)
+- next action: ask the user to open another terminal/session and run
+  `implement-tdd` after explicit approval; never perform that handoff in this
+  session
 
 Do not include a long explanation.

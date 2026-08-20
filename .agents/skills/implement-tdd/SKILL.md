@@ -5,7 +5,8 @@ description: PRIMARY coding skill. Use when implementing any issue, task, featur
 
 # Implement TDD
 
-Use this skill to implement code.
+Use this skill to implement code in a fresh session after `plan-code` has
+produced a plan and issue.
 
 This is the coding skill.
 
@@ -29,14 +30,7 @@ Before doing anything else, read this SKILL.md in full.
 
 ## Startup behavior
 
-Read:
-
-1. `AGENTS.md`
-2. `.agents/agent-rules.md`
-3. `.agents/project-context.md`
-4. `.agents/state/current-task.md`
-5. active plan file
-6. active issue file
+Follow the shared startup read order in `.agents/agent-rules.md`.
 
 If `.agents/state/current-task.md` is missing:
 
@@ -94,7 +88,8 @@ Command selection guidance:
 Checks guidance:
 
 - After the test is green, run linting and style checks at least on the changed files (not necessarily the whole repo) to catch formatting, typing, or obvious issues introduced by the change. Use the project's preferred command from `project-context.md` (for JS/TS, prefer `bun`-based commands when Bun is the preferred runtime).
-- If the project defines a verification script named `aislop` (a project-local script listed in package.json or documented in project-context.md), run it as part of the checks to ensure no accidental issues were introduced (e.g. `bun run aislop` or the preferred runner). Do not invent or run unknown scripts; only run `aislop` when it is explicitly present.
+- If the `aislop` MCP tool set is available in this session, call the mechanical-fix tool (non-aggressive mode only) before manual checks — it clears formatting/lint/ai-slop issues deterministically without spending review effort on them. Never use the aggressive mode; it can delete files or rewrite `package.json`.
+- If the `aislop` MCP tool set is not available, fall back to a project-local `aislop` script only when it is explicitly present (package.json scripts or project-context.md). Do not invent or run unknown scripts.
 
 See `.agents/references.md` for concrete commands and a safe example script to run checks only on changed/new files. If `.agents/scripts/run_checks_changed.sh` exists, prefer using it to ensure consistent behavior across agents.
 11. Update `.agents/state/current-task.md`.
@@ -145,6 +140,20 @@ Only refactor when:
 - readability improves
 - behavior does not change
 
+## Scope drift check
+
+Before the refactor phase (or before stopping, if there is no refactor), diff
+the files actually changed against the issue's `Files` list.
+
+- Every changed file must be in `Files`, or be a direct, unavoidable
+  consequence documented in `Notes` (e.g. a barrel/export file).
+- If a changed file is not covered and cannot be justified as unavoidable:
+  stop, set `current-task.md` to `BLOCKED`, and describe the drift instead of
+  continuing silently.
+- Do not add files to the issue's `Files` list retroactively to make a drift
+  disappear. Update the issue file first only if the user or `plan-code`
+  confirms the extra scope is correct.
+
 ## When blocked
 
 If a decision is required:
@@ -154,6 +163,20 @@ If a decision is required:
 3. stop
 
 Do not guess when the guess could change architecture or behavior.
+
+## Resuming after BLOCKED
+
+If `current-task.md` status is `BLOCKED` at startup:
+
+1. Read `Current Failure` — it describes the blocker.
+2. Do not resume the TDD cycle until you can state, concretely, why the
+   blocker no longer applies (e.g. the user answered the question, the plan
+   or issue was updated, a dependency was installed).
+3. If the blocker's resolution is not evident from the plan/issue/conversation,
+   stop and ask the user to confirm it is resolved before setting
+   `Status: IN_PROGRESS`.
+4. Never resume by assumption just because time has passed or the session is
+   new.
 
 ## Updating current-task
 
