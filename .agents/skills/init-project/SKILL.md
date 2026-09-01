@@ -25,6 +25,26 @@ Before doing anything else, read this SKILL.md in full.
 - Create the `.agents/` workspace if missing.
 - Create or update project agent files without overwriting user work.
 
+## Refresh mode
+
+If `.agents/project-context.md` already exists, this is a refresh, not a
+first run:
+
+- Re-run stack/dependency detection as usual.
+- Diff the freshly detected libraries against the `## Key Libraries` section
+  already recorded. Append entries for new dependencies; flag (do not
+  silently remove) entries for dependencies no longer present, so the user
+  confirms removal.
+- Preserve everything else the user or a prior run wrote (`## Notes`,
+  `## Diff Size Budget Override`, custom preferences) — do not overwrite them.
+- Update the `Last verified` date at the top of the file.
+- Do not re-run the `aislop` baseline capture; leave the existing baseline
+  unless the user explicitly asks to recapture it.
+
+Run this whenever a dependency manifest changed materially (new major
+library, runtime switch) and the user asks to refresh, or when `review-code`
+flags drift (see its "dependency drift" check) and recommends it.
+
 ## Must read first
 
 1. `AGENTS.md` if present

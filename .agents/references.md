@@ -56,5 +56,16 @@ Notes:
 - Only run `aislop` when it is explicitly present.
 - Do not lint the whole repository by default: target only changed/new files as shown above.
 - Always use the preferred runner indicated in `.agents/project-context.md` (pref: `bun` if detected).
+- `.agents/scripts/run_checks_changed.sh` implements steps 1-4 above and is the
+  preferred entry point when present — prefer it over reimplementing this
+  logic inline.
 
-If you want, I can also add a small utility script under `.agents/` (e.g. `.agents/scripts/run_checks_changed.sh`) that encapsulates these steps for the agents. Should I add it?
+## Scope: JS/TS only
+
+`run_checks_changed.sh` only detects and lints JS/TS files (`.js`, `.ts`,
+`.tsx`, `.jsx`, `.mjs`, `.cjs`) via npm/bun/pnpm/yarn. On a non-JS/TS project
+(Rust, Python, Go, Zig), it will report "no files to check" even when the
+actual changed files need linting — it is not a signal that the project is
+clean. In that case, run the project's own lint/format/test commands from
+`.agents/project-context.md` directly (e.g. `cargo clippy`, `ruff check`,
+`go vet`) instead of relying on this script.

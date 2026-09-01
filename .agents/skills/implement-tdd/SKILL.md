@@ -27,6 +27,8 @@ Before doing anything else, read this SKILL.md in full.
 - Do not add dependencies unless the plan explicitly allows it.
 - Do not rewrite, redefine, or wrap library types. Use them as-is.
 - Do not continue through multiple issues by default.
+- Do not narrate the rules or the process. Report facts and results, not
+  intentions.
 
 ## Startup behavior
 
@@ -69,9 +71,17 @@ If multiple issues are ready, continue only with the active issue from `current-
 
 For the active issue:
 
-1. Confirm the acceptance criteria.
+1. Confirm the acceptance criteria. If starting a new issue named by the
+   "continue"/"next" resolution above, update `Active Issue` in
+   `current-task.md` to that issue before doing anything else.
 2. Set `current-task.md` status to `IN_PROGRESS`.
-3. Inspect only directly relevant files.
+3. Inspect only directly relevant files — read the files/symbols the issue
+   points to and confirm the issue's assumptions still match the current
+   code (signatures, existing patterns, whether the described behavior
+   already exists). The issue may be stale or incomplete; verify before
+   coding instead of trusting the text blindly. If reality diverges from
+   the issue in a way that changes scope or approach, treat it as a
+   blocker (see "When blocked") instead of silently improvising.
 4. Write or update one failing test first.
 5. Run the smallest relevant test command.
 
@@ -164,6 +174,16 @@ If a decision is required:
 
 Do not guess when the guess could change architecture or behavior.
 
+### Ask one question at a time
+
+If the blocker needs user input, ask exactly one question at a time using the
+`question` tool, and wait for the answer before asking the next one. Never
+dump a list of questions in a single message. When the blocker has a concrete,
+enumerable set of choices (e.g. which of two approaches, yes/no, which file to
+touch), use the `question` tool's `options` so the user picks instead of
+typing free text — same convention `plan-code` uses for its clarification
+questions.
+
 ## Resuming after BLOCKED
 
 If `current-task.md` status is `BLOCKED` at startup:
@@ -202,18 +222,35 @@ Status transitions:
 - code done, checks green: `Status: DONE`, `Last Command`, `Next Step`
 - blocked: `Status: BLOCKED`, `Current Failure` = the blocker
 
+On `Status: DONE`, also look at the active issues file
+(`.agents/issues/<task-slug>.md`) for the next issue with `Status: TODO`:
+
+- if one exists, set `Next Step` to name it explicitly (e.g. `Issue 2 -
+  <title> is next, TODO`) — do not start it, just record it so the next
+  session does not need the issue number restated
+- if none exists (all issues `DONE`), set `Next Step` to say the plan is
+  fully implemented and recommend `review-code`
+
+### Resuming with "continue" / "next"
+
+If the user says "continue" or "next" without naming an issue number, and
+`current-task.md`'s `Next Step` already names the next issue (from the rule
+above), use that issue — do not ask the user to repeat the number. Only ask
+for a number if `Next Step` is ambiguous or does not name a specific issue.
+
 Also update the issue file (`Status:` line in `.agents/issues/<task-slug>.md`) to match: `TODO` → `IN_PROGRESS` → `DONE` or `BLOCKED`.
 
 Keep `current-task.md` short.
 
 ## Output
 
-Return:
+Report only, in this order, one line each:
 
 - issue completed or blocked
-- test added or changed
-- implementation summary
+- test added or changed (file + name)
+- implementation summary (1 line)
 - command run
 - next step
 
-Keep the response concise.
+No preamble, no restating the rules, no decorative summary. If nothing
+noteworthy happened in a category, omit the line instead of padding it.

@@ -1,5 +1,7 @@
 # Project Context
 
+Last verified: <date init-project last ran, full or refresh mode>
+
 ## Existing Agent Instructions
 
 - `AGENTS.md`: PRESENT | MISSING
@@ -37,6 +39,27 @@
 - Do not add dependencies without asking.
 - Prefer the detected package manager.
 - Prefer the detected test runner.
+
+## Key Libraries
+
+<!-- One entry per major dependency: purpose + core types/APIs to reuse,
+     so plan-code and implement-tdd don't guess or reinvent them. -->
+
+-
+
+## Aislop Baseline
+
+- Baseline score:
+- Captured on:
+- review-code compares future scans against this baseline.
+
+## Diff Size Budget Override
+
+<!-- Optional. Default budget (see review-code): 6 files / 150 lines
+     excluding tests. Only fill this in if this project needs a different
+     number. -->
+
+-
 
 ## Notes
 

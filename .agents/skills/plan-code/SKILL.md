@@ -144,6 +144,10 @@ reconnaissance proves ALL of:
 If reconnaissance is inconclusive about which bucket applies, default to the
 aggressive mode.
 
+Same one-question-at-a-time, `question`-tool convention as `implement-tdd`'s
+blocked-question flow — only the trigger differs (upfront clarification here
+vs. mid-execution blocker there).
+
 ### How to question
 
 - Be direct. Challenge concretely, do not list generic categories.
@@ -155,8 +159,14 @@ aggressive mode.
 - Stop only when every decision that changes behavior, scope, data, or API is
   answered or explicitly delegated to an assumption the user accepts.
 - Do not ask questions you could answer yourself by reading the codebase.
-- Ask all currently discoverable questions in one message. If an answer reveals
-  a new affected area, scan that area before asking the next question.
+- Ask exactly one question at a time, using the `question` tool, and wait for
+  the answer before asking the next one. Do not dump a list of questions in a
+  single message. If an answer reveals a new affected area, scan that area
+  before asking the next question.
+- When a question has a concrete, enumerable set of choices (a mode, a
+  strategy, a data shape, yes/no), use the `question` tool's `options` so the
+  user picks instead of typing free text. Reserve free-text/custom answers for
+  genuinely open-ended questions.
 - Do not proceed to planning while blocking questions remain unanswered.
 
 ### After questioning
@@ -220,6 +230,13 @@ Create `.agents/issues/<task-slug>.md`.
 Issues are local TDD tasks, not GitHub issues.
 
 Each issue must be small enough for one TDD cycle.
+
+Each issue must be self-contained: `implement-tdd` starts every issue in a
+fresh session with no memory of this planning conversation. Fill the issue's
+`Context` section (see `issue-template.md`) with the current behavior, exact
+relevant symbols/signatures, and which library types/APIs to use — do not
+make the implementer re-derive this by re-reading the whole plan or
+re-exploring the codebase.
 
 A good issue:
 

@@ -52,6 +52,12 @@ Check:
 - is `current-task.md` updated and accurate?
 - if `aislop` was scanned, did the score regress versus baseline?
 - is the diff within the size budget (see below)?
+- dependency drift: did the diff touch a dependency manifest (`package.json`,
+  `Cargo.toml`, `requirements.txt`/`pyproject.toml`, `go.mod`)? If a
+  library was added/removed/changed and `project-context.md`'s `## Key
+  Libraries` section does not reflect it, note this as a finding and
+  recommend running `init-project` in refresh mode — do not update
+  `project-context.md` yourself.
 
 ## Diff size budget
 
@@ -92,7 +98,7 @@ Decide the size of a problem before acting:
 
 - **Tiny fix** (single-file, no behavior change, no new test needed, e.g. typo, wrong `current-task.md` field): fix it here using TDD discipline, then update `current-task.md`.
 - **Real change** (any behavior change, a new or modified test, more than one file, or anything unclear): do not fix it here. Hand off to `implement-tdd` with a prompt. Use this rule even for small-looking changes.
-- If the change is out of the current issue's scope: create or update a follow-up issue in `.agents/issues/<task-slug>.md`, update `current-task.md`, and hand off.
+- If the change is out of the current issue's scope: create or update a follow-up issue in `.agents/issues/<task-slug>.md`, set `current-task.md`'s `Active Issue` and `Next Step` to name that follow-up issue explicitly (same convention `implement-tdd` uses when it points to the next `TODO` issue — see its "Updating current-task" section), and hand off.
 
 ## Handing off to implement-tdd
 
