@@ -88,7 +88,7 @@ For the active issue:
 Command selection guidance:
 
 - When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer running tests and scripts with `bun` (e.g. `bun test`, `bun run <script>`) rather than node/npm/pnpm/yarn. Do not change the project's declared preference if it explicitly uses a different manager.
-- If the detected project tooling is ambiguous, do not guess — consult the user or `plan-code`/`init-project` output (project-context.md) before choosing a command.
+- If the detected project tooling is ambiguous, do not guess — consult the user or `plan-code`/`manage-project-context` output (project-context.md) before choosing a command.
 6. Confirm the test fails for the expected reason.
 7. Implement the smallest change.
 8. Run the test again.

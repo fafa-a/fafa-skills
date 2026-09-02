@@ -34,7 +34,7 @@ Read only what is necessary.
 ### Shared startup read order
 
 Every skill must read, in order, before doing anything else (skip a file only
-if it does not exist yet, e.g. before `init-project` has run):
+if it does not exist yet, e.g. before `manage-project-context` has run):
 
 1. `AGENTS.md`
 2. `.agents/agent-rules.md`

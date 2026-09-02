@@ -56,7 +56,7 @@ Check:
   `Cargo.toml`, `requirements.txt`/`pyproject.toml`, `go.mod`)? If a
   library was added/removed/changed and `project-context.md`'s `## Key
   Libraries` section does not reflect it, note this as a finding and
-  recommend running `init-project` in refresh mode — do not update
+  recommend running `manage-project-context` in refresh mode — do not update
   `project-context.md` yourself.
 
 ## Diff size budget

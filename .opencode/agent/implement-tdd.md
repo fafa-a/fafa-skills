@@ -18,7 +18,7 @@ permission:
     "*": allow
     "plan-code": deny
     "review-code": deny
-    "init-project": deny
+    "manage-project-context": deny
     "implement-tdd": allow
   task:
     "*": deny
@@ -37,5 +37,5 @@ own scope-drift and blocked-state checks.
 Domain skills (technology-specific supplements, e.g. a React or Rust-async
 skill) are allowed so the "Domain skills" step in the skill file actually
 works. The other core workflow skills (`plan-code`, `review-code`,
-`init-project`) are explicitly denied here to keep this agent inside
+`manage-project-context`) are explicitly denied here to keep this agent inside
 execution — planning, review, and repo init happen in their own sessions.

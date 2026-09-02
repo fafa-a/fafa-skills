@@ -1,11 +1,13 @@
 ---
-name: init-project
-description: Initialize a repository for Fafa's lightweight coding-agent workflow.
+name: manage-project-context
+description: Initialize, refresh, or partially rebuild a repository's .agents/ workspace and project-context.md for Fafa's lightweight coding-agent workflow.
 ---
 
-# Init Project
+# Manage Project Context
 
-Use this skill to prepare a target repository for the local agent workflow.
+Use this skill to prepare and maintain a target repository's `.agents/`
+workspace, and to keep `project-context.md` accurate over time (first run,
+full refresh, or partial rebuild — see below).
 
 This skill prepares context only.
 
@@ -44,6 +46,26 @@ first run:
 Run this whenever a dependency manifest changed materially (new major
 library, runtime switch) and the user asks to refresh, or when `review-code`
 flags drift (see its "dependency drift" check) and recommends it.
+
+## Partial state (project-context.md missing, other files present)
+
+If `.agents/` already exists (e.g. `agent-rules.md`, `issues/`,
+`state/current-task.md`) but `project-context.md` specifically is missing,
+this is neither a clean first run nor a refresh — treat it as a targeted
+rebuild:
+
+- Re-run the full detection pass (stack, tooling, dependency manifests, key
+  libraries — same basis as "Create if missing" below).
+- Recreate only `project-context.md` from that detection.
+- Do not touch, recreate, or reset any other existing `.agents/` file
+  (`agent-rules.md`, `plans/`, `issues/`, `state/current-task.md`,
+  `references.md`). A missing `project-context.md` is not a signal to
+  re-scaffold the workspace.
+- If `current-task.md` shows an active task/plan/issue, do not reset or
+  reinterpret it based on the freshly rebuilt context — leave task state
+  exactly as found.
+- Note in the output which file was rebuilt and why (missing), so the user
+  understands this wasn't a full re-init.
 
 ## Must read first
 
@@ -147,7 +169,7 @@ Also scaffold, if missing, the companion permission-enforced agent files:
 ├─ plan-code.md
 ├─ implement-tdd.md
 ├─ review-code.md
-└─ init-project.md
+└─ manage-project-context.md
 ```
 
 Copy these from this fafa-skills repository's own `.opencode/agent/` files

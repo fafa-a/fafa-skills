@@ -9,7 +9,7 @@ Purpose: provide safe, reproducible commands to detect/run a project verificatio
 
   grep -q '"aislop"' package.json && echo "aislop found"
 
-- Or check `.agents/project-context.md` if `init-project` populated it: look for `aislop` or `verification script` entries.
+- Or check `.agents/project-context.md` if `manage-project-context` populated it: look for `aislop` or `verification script` entries.
 
 2) Running `aislop` (if present)
 

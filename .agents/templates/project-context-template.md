@@ -1,6 +1,6 @@
 # Project Context
 
-Last verified: <date init-project last ran, full or refresh mode>
+Last verified: <date manage-project-context last ran, full run, refresh, or partial rebuild>
 
 ## Existing Agent Instructions
 
