@@ -140,6 +140,20 @@ Avoid:
 - Use types from libraries as-is. Do not rewrite, re-export, or copy them.
 - Follow each library's documented best practices and patterns.
 - Do not wrap library functions in unnecessary abstractions.
+- When unsure how to use a library API, prefer reading its real source
+  (vendored repo, `node_modules` unflattened source, or the project's own
+  existing usages) over guessing or fetching web docs. Source code shows
+  actual usage patterns; docs written for humans often don't.
+- If a project vendors a library's source under a dedicated directory (e.g.
+  `repos/<lib>`), treat it as read-only reference material: never import
+  from it and never edit it unless explicitly asked.
+- If, while implementing, you notice recurring non-obvious usage patterns
+  for a library the project relies on heavily, consider creating or
+  updating a short pattern file at `agent-patterns/<lib>.md` summarizing
+  the idioms (constructors, error handling, common pitfalls) with examples
+  drawn from the real source or the project's own code. Keep it practical,
+  not exhaustive. This is optional and must not block or delay the active
+  issue.
 
 ## Refactor phase
 
@@ -173,6 +187,20 @@ If a decision is required:
 3. stop
 
 Do not guess when the guess could change architecture or behavior.
+
+Treat the following as concrete blocking cases (not exhaustive, but do not
+silently improvise on any of these — stop and ask instead):
+
+- introducing or changing a public API surface (exported function signature,
+  route, type) beyond what the issue explicitly describes
+- changing the data model (new/changed field, schema, table, persisted shape)
+- choosing an error-handling strategy not already established by the
+  project's existing patterns (e.g. throw vs. Result vs. error union) when
+  the issue does not specify one
+- picking between two or more materially different implementation
+  approaches where the issue does not name one
+- anything that would require touching a file outside the issue's `Files`
+  list in a way not already covered by "Scope drift check" below
 
 ### Ask one question at a time
 

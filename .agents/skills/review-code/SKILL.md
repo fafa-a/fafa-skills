@@ -73,6 +73,7 @@ excluding test files, is over budget for a single issue.
 
 Checks guidance:
 
+- Reviewers must independently re-run the relevant test command themselves and see it pass — do not trust `current-task.md`'s `Last Command` or the diff's presence as proof. A verdict of `PASS` requires observed, current test output, not a reported one.
 - Reviewers must verify that linting/style checks pass for the changed files. Prefer running the project's preferred lint/test runner (from project-context.md). When Bun is the preferred runtime, prefer `bun`-based commands.
 - If the `aislop` MCP tool set is available in this session, run a scan and compare the resulting score against the recorded baseline (`project-context.md`, or fetch it directly). A drop in score is a review finding, not something to silently ignore. Use the "why" tool to explain any finding whose message alone is not actionable enough to put in the handoff prompt.
 - If the `aislop` MCP tool set is not available, fall back to a project-local script named `aislop` only if explicitly present (e.g. `bun run aislop`).
@@ -83,26 +84,44 @@ See `.agents/references.md` for concrete commands and a safe example script to r
 
 Use one of these, with this exact meaning:
 
-- `PASS` — code matches the plan and the issue, tests are meaningful and green, `current-task.md` is accurate. Nothing to change.
-- `NEEDS CHANGES` — the current issue is mostly implemented but has fixable problems (missing/failing test, scope drift, `current-task.md` wrong, minor correctness issue). Hand off with ONE `implement-tdd` prompt on the current issue.
+- `PASS` — code matches the plan and the issue, tests are meaningful and green (verified by re-running them yourself), `current-task.md` is accurate. Nothing to change.
+- `NEEDS CHANGES` — the current issue is mostly implemented but has fixable problems (missing/failing test, scope drift, `current-task.md` wrong, minor correctness issue, or the plan/issue itself needs correcting). Hand off with ONE prompt, to `implement-tdd` or `plan-code` (see "Correction behavior" for which one).
 - `BLOCKED` — cannot finish the review because a decision is required or context is missing (plan contradicts the issue, ambiguous acceptance criteria, no failing test possible). No prompt; ask the user the blocking question.
 
 ## Correction behavior
 
-Default:
+`review-code` never implements fixes itself — not even tiny ones (typos,
+wrong `current-task.md` fields included). Its only outputs on `NEEDS
+CHANGES` are the verdict and exactly ONE handoff prompt, addressed to
+either `plan-code` or `implement-tdd`. Never both. Never fix anything
+directly.
 
-- review first
-- do not make broad changes
+Decide the target before writing the prompt:
 
-Decide the size of a problem before acting:
+- Route to **implement-tdd** when the plan and the issue are still correct
+  as written: acceptance criteria hold, scope is right, and only
+  code/tests need to change to satisfy the existing issue.
+- Route to **plan-code** when the plan or issue itself is what's wrong:
+  acceptance criteria are incomplete/incorrect, the issue's assumptions no
+  longer match the codebase in a way that changes what should be built,
+  scope must be split or a new issue/task must be created. Do not ask
+  `implement-tdd` to work around a plan or issue that is itself wrong —
+  fix the source of truth first via `plan-code`.
 
-- **Tiny fix** (single-file, no behavior change, no new test needed, e.g. typo, wrong `current-task.md` field): fix it here using TDD discipline, then update `current-task.md`.
-- **Real change** (any behavior change, a new or modified test, more than one file, or anything unclear): do not fix it here. Hand off to `implement-tdd` with a prompt. Use this rule even for small-looking changes.
-- If the change is out of the current issue's scope: create or update a follow-up issue in `.agents/issues/<task-slug>.md`, set `current-task.md`'s `Active Issue` and `Next Step` to name that follow-up issue explicitly (same convention `implement-tdd` uses when it points to the next `TODO` issue — see its "Updating current-task" section), and hand off.
+`implement-tdd` runs on a smaller, cheaper, less reliable model than this
+review skill. Its prompt must be fully self-contained and leave nothing to
+interpretation: exact file paths, exact expected behavior, exact test
+name/assertion, exact command. Never use vague wording like "improve",
+"fix as needed", or "handle edge cases" — spell out each change as a
+concrete, checkable instruction.
 
 ## Handing off to implement-tdd
 
-On verdict `NEEDS CHANGES`, produce ONE single ready-to-use prompt for the `implement-tdd` agent. The prompt is about the CURRENT issue only: it tells `implement-tdd` what to improve in the issue that was just reviewed. Do not leave the reviewer response as free-form notes.
+On verdict `NEEDS CHANGES`, when routed to `implement-tdd` (see "Correction
+behavior"), produce ONE single ready-to-use prompt for the `implement-tdd`
+agent. The prompt is about the CURRENT issue only: it tells `implement-tdd`
+what to improve in the issue that was just reviewed. Do not leave the
+reviewer response as free-form notes.
 
 The single prompt must:
 
@@ -138,6 +157,37 @@ Do not: <unrelated changes to avoid>
 ---
 ```
 
+## Handing off to plan-code
+
+On verdict `NEEDS CHANGES`, when routed to `plan-code` (see "Correction
+behavior"), produce ONE single ready-to-use prompt for the `plan-code`
+agent instead. This prompt asks `plan-code` to correct the plan/issue
+itself — not to implement anything.
+
+The single prompt must:
+
+- name the active plan and the active/affected issue slug(s)
+- state precisely what is wrong with the current plan or issue (incorrect
+  or incomplete acceptance criteria, stale assumption, missing scope) and
+  the evidence from the diff/codebase that proves it
+- state what `plan-code` needs to decide or produce: update the existing
+  issue, split it, or create a new follow-up issue
+- forbid `plan-code` from implementing code itself
+
+Format:
+
+```text
+plan-code prompt:
+---
+Active plan: <plan-slug>
+Affected issue: <issue-slug>
+Problem: <what is wrong with the plan/issue, one or two lines>
+Evidence: <diff/codebase fact that proves the plan/issue is wrong or incomplete>
+Requested outcome: <update issue X's acceptance criteria | split into a new issue | create follow-up issue for Y>
+Do not implement code — update the plan/issue only.
+---
+```
+
 ## Do not
 
 - do not rewrite the implementation
@@ -159,7 +209,7 @@ Then include:
 
 - what is good
 - problems found
-- ONE `implement-tdd` prompt on the current issue (only on `NEEDS CHANGES`)
+- ONE handoff prompt on the current issue (only on `NEEDS CHANGES`): either the `implement-tdd` prompt or the `plan-code` prompt, never both
 - on `BLOCKED`: the blocking question instead of a prompt
 - next recommended skill
 
