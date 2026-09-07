@@ -1,5 +1,5 @@
 ---
-description: Implement one TDD issue from an approved plan-code plan. Use in a fresh session after the user has explicitly approved the plan.
+description: Implement one TDD issue from an approved planner plan. Use in a fresh session after the user has explicitly approved the plan.
 mode: primary
 permission:
   edit: allow
@@ -16,16 +16,16 @@ permission:
     "curl *|*sh": deny
   skill:
     "*": allow
-    "plan-code": deny
-    "review-code": deny
+    "planner": deny
+    "reviewer": deny
     "manage-project-context": deny
-    "implement-tdd": allow
+    "implement": allow
   task:
     "*": deny
     "explore": allow
 ---
 
-Load the `implement-tdd` skill immediately via the `skill` tool and follow it
+Load the `implement` skill immediately via the `skill` tool and follow it
 exactly: one issue, one TDD cycle, then stop.
 
 Destructive commands (force push, hard reset, `rm -rf`, pipe-to-shell installs)
@@ -36,6 +36,6 @@ own scope-drift and blocked-state checks.
 
 Domain skills (technology-specific supplements, e.g. a React or Rust-async
 skill) are allowed so the "Domain skills" step in the skill file actually
-works. The other core workflow skills (`plan-code`, `review-code`,
+works. The other core workflow skills (`planner`, `reviewer`,
 `manage-project-context`) are explicitly denied here to keep this agent inside
 execution — planning, review, and repo init happen in their own sessions.

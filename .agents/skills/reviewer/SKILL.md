@@ -1,9 +1,9 @@
 ---
-name: review-code
+name: reviewer
 description: Review code changes against the active plan, issues, tests, and project rules.
 ---
 
-# Review Code
+# Reviewer
 
 Use this skill after implementation.
 
@@ -85,41 +85,41 @@ See `.agents/references.md` for concrete commands and a safe example script to r
 Use one of these, with this exact meaning:
 
 - `PASS` — code matches the plan and the issue, tests are meaningful and green (verified by re-running them yourself), `current-task.md` is accurate. Nothing to change.
-- `NEEDS CHANGES` — the current issue is mostly implemented but has fixable problems (missing/failing test, scope drift, `current-task.md` wrong, minor correctness issue, or the plan/issue itself needs correcting). Hand off with ONE prompt, to `implement-tdd` or `plan-code` (see "Correction behavior" for which one).
+- `NEEDS CHANGES` — the current issue is mostly implemented but has fixable problems (missing/failing test, scope drift, `current-task.md` wrong, minor correctness issue, or the plan/issue itself needs correcting). Hand off with ONE prompt, to `implement` or `planner` (see "Correction behavior" for which one).
 - `BLOCKED` — cannot finish the review because a decision is required or context is missing (plan contradicts the issue, ambiguous acceptance criteria, no failing test possible). No prompt; ask the user the blocking question.
 
 ## Correction behavior
 
-`review-code` never implements fixes itself — not even tiny ones (typos,
+`reviewer` never implements fixes itself — not even tiny ones (typos,
 wrong `current-task.md` fields included). Its only outputs on `NEEDS
 CHANGES` are the verdict and exactly ONE handoff prompt, addressed to
-either `plan-code` or `implement-tdd`. Never both. Never fix anything
+either `planner` or `implement`. Never both. Never fix anything
 directly.
 
 Decide the target before writing the prompt:
 
-- Route to **implement-tdd** when the plan and the issue are still correct
+- Route to **implement** when the plan and the issue are still correct
   as written: acceptance criteria hold, scope is right, and only
   code/tests need to change to satisfy the existing issue.
-- Route to **plan-code** when the plan or issue itself is what's wrong:
+- Route to **planner** when the plan or issue itself is what's wrong:
   acceptance criteria are incomplete/incorrect, the issue's assumptions no
   longer match the codebase in a way that changes what should be built,
   scope must be split or a new issue/task must be created. Do not ask
-  `implement-tdd` to work around a plan or issue that is itself wrong —
-  fix the source of truth first via `plan-code`.
+  `implement` to work around a plan or issue that is itself wrong —
+  fix the source of truth first via `planner`.
 
-`implement-tdd` runs on a smaller, cheaper, less reliable model than this
+`implement` runs on a smaller, cheaper, less reliable model than this
 review skill. Its prompt must be fully self-contained and leave nothing to
 interpretation: exact file paths, exact expected behavior, exact test
 name/assertion, exact command. Never use vague wording like "improve",
 "fix as needed", or "handle edge cases" — spell out each change as a
 concrete, checkable instruction.
 
-## Handing off to implement-tdd
+## Handing off to implement
 
-On verdict `NEEDS CHANGES`, when routed to `implement-tdd` (see "Correction
-behavior"), produce ONE single ready-to-use prompt for the `implement-tdd`
-agent. The prompt is about the CURRENT issue only: it tells `implement-tdd`
+On verdict `NEEDS CHANGES`, when routed to `implement` (see "Correction
+behavior"), produce ONE single ready-to-use prompt for the `implement`
+agent. The prompt is about the CURRENT issue only: it tells `implement`
 what to improve in the issue that was just reviewed. Do not leave the
 reviewer response as free-form notes.
 
@@ -136,7 +136,7 @@ The single prompt must:
 Format:
 
 ```text
-implement-tdd prompt:
+implement prompt:
 ---
 Active issue: <issue-slug>
 Task: <one-line summary>
@@ -157,11 +157,11 @@ Do not: <unrelated changes to avoid>
 ---
 ```
 
-## Handing off to plan-code
+## Handing off to planner
 
-On verdict `NEEDS CHANGES`, when routed to `plan-code` (see "Correction
-behavior"), produce ONE single ready-to-use prompt for the `plan-code`
-agent instead. This prompt asks `plan-code` to correct the plan/issue
+On verdict `NEEDS CHANGES`, when routed to `planner` (see "Correction
+behavior"), produce ONE single ready-to-use prompt for the `planner`
+agent instead. This prompt asks `planner` to correct the plan/issue
 itself — not to implement anything.
 
 The single prompt must:
@@ -170,14 +170,14 @@ The single prompt must:
 - state precisely what is wrong with the current plan or issue (incorrect
   or incomplete acceptance criteria, stale assumption, missing scope) and
   the evidence from the diff/codebase that proves it
-- state what `plan-code` needs to decide or produce: update the existing
+- state what `planner` needs to decide or produce: update the existing
   issue, split it, or create a new follow-up issue
-- forbid `plan-code` from implementing code itself
+- forbid `planner` from implementing code itself
 
 Format:
 
 ```text
-plan-code prompt:
+planner prompt:
 ---
 Active plan: <plan-slug>
 Affected issue: <issue-slug>
@@ -209,7 +209,7 @@ Then include:
 
 - what is good
 - problems found
-- ONE handoff prompt on the current issue (only on `NEEDS CHANGES`): either the `implement-tdd` prompt or the `plan-code` prompt, never both
+- ONE handoff prompt on the current issue (only on `NEEDS CHANGES`): either the `implement` prompt or the `planner` prompt, never both
 - on `BLOCKED`: the blocking question instead of a prompt
 - next recommended skill
 

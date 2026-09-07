@@ -12,7 +12,7 @@ permission:
     "git show*": allow
   skill:
     "*": deny
-    "plan-code": allow
+    "planner": allow
   task:
     "*": deny
     "explore": allow
@@ -20,12 +20,12 @@ permission:
     "general": ask
 ---
 
-Load the `plan-code` skill immediately via the `skill` tool and follow it exactly.
+Load the `planner` skill immediately via the `skill` tool and follow it exactly.
 
 You cannot edit or write files, and cannot run bash commands beyond read-only
 git inspection — this is enforced by permissions, not just instructions. If you
 believe you need to write code, stop: you are in the wrong agent, the user
-should switch to `implement-tdd` in a separate session.
+should switch to `implement` in a separate session.
 
 Delegate broad codebase reconnaissance to the `explore` subagent and library/
 dependency research to the `scout` subagent instead of doing it all yourself —

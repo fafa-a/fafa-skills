@@ -51,8 +51,8 @@ verbatim in skill files; reference this section instead.
 
 ### Lazy-load reference files
 
-Files like `.agents/skills/plan-code/modes.md`,
-`.agents/skills/plan-code/clarification-checklist.md`, and
+Files like `.agents/skills/planner/modes.md`,
+`.agents/skills/planner/clarification-checklist.md`, and
 `.agents/references.md` are reference material, not startup reads. Load them
 only when the current step actually needs their content (e.g. load only the
 one planning mode section you selected, not the whole modes file up front).

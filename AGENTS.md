@@ -5,13 +5,13 @@ This repository contains lightweight coding agent skills.
 Core workflow:
 
 1. `manage-project-context` prepares a target repository.
-2. `plan-code` clarifies, documents, and splits work into TDD issues.
-3. `implement-tdd` implements one TDD issue at a time.
-4. `review-code` reviews against the plan and creates follow-up issues when needed.
+2. `planner` clarifies, documents, and splits work into TDD issues.
+3. `implement` implements one TDD issue at a time.
+4. `reviewer` reviews against the plan and creates follow-up issues when needed.
 
 Each step also has a companion primary agent in `.opencode/agent/` with the
-same name, enforcing the skill's rules via real permissions (e.g. `plan-code`
-cannot edit files or run bash beyond read-only git inspection; `review-code`
+same name, enforcing the skill's rules via real permissions (e.g. `planner`
+cannot edit files or run bash beyond read-only git inspection; `reviewer`
 cannot edit files). Prefer switching to these agents (Tab key) over relying on
 `build` plus prose discipline alone.
 

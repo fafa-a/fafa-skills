@@ -44,7 +44,7 @@ first run:
   unless the user explicitly asks to recapture it.
 
 Run this whenever a dependency manifest changed materially (new major
-library, runtime switch) and the user asks to refresh, or when `review-code`
+library, runtime switch) and the user asks to refresh, or when `reviewer`
 flags drift (see its "dependency drift" check) and recommends it.
 
 ## Partial state (project-context.md missing, other files present)
@@ -166,15 +166,15 @@ Also scaffold, if missing, the companion permission-enforced agent files:
 
 ```text
 .opencode/agent/
-├─ plan-code.md
-├─ implement-tdd.md
-├─ review-code.md
+├─ planner.md
+├─ implement.md
+├─ reviewer.md
 └─ manage-project-context.md
 ```
 
 Copy these from this fafa-skills repository's own `.opencode/agent/` files
-verbatim (they define `permission` rules — e.g. `plan-code` denies `edit` and
-`bash` beyond read-only git inspection, `review-code` denies `edit` — so the
+verbatim (they define `permission` rules — e.g. `planner` denies `edit` and
+`bash` beyond read-only git inspection, `reviewer` denies `edit` — so the
 workflow's guardrails are enforced by the runtime in the target project, not
 only documented in prose). Also copy the root `opencode.json` snippet
 (`instructions: [".agents/agent-rules.md"]`), merging it into the target
@@ -192,7 +192,7 @@ or skip instead of overwriting.
 - detected stack and tooling
 - preferred runtime/tooling (e.g. `bun`, `node`/`npm`/`pnpm`, `python`, `rust`)
 - test commands, lint commands, and conventions
-- **key libraries and their core types/APIs** — list each major dependency, its public types, and idiomatic patterns so `plan-code` and `implement-tdd` know what to reuse
+- **key libraries and their core types/APIs** — list each major dependency, its public types, and idiomatic patterns so `planner` and `implement` know what to reuse
 - **aislop baseline** (see below)
 
 ## aislop baseline
@@ -205,7 +205,7 @@ tool set is available in this session:
    resulting score as the initial baseline (follow the tool's own instructions
    to persist it, e.g. `aislop hook baseline`).
 2. Record in `project-context.md`: baseline score, date captured, and that
-   `review-code` should compare against it.
+   `reviewer` should compare against it.
 
 Do not invent an `aislop` npm/bun script check — that legacy path only applies
 when the MCP tool set is not available in the session. If the MCP tool set is

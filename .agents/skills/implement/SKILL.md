@@ -1,11 +1,11 @@
 ---
-name: implement-tdd
+name: implement
 description: PRIMARY coding skill. Use when implementing any issue, task, feature, bugfix, or code change. This is the default implementation skill. Other skills are domain supplements only.
 ---
 
-# Implement TDD
+# Implement
 
-Use this skill to implement code in a fresh session after `plan-code` has
+Use this skill to implement code in a fresh session after `planner` has
 produced a plan and issue.
 
 This is the coding skill.
@@ -38,12 +38,22 @@ If `.agents/state/current-task.md` is missing:
 
 - stop
 - say that there is no active task
-- ask the user to run `plan-code` first
+- ask the user to run `planner` first
 
 If current task status is `NONE`, `DONE`, or empty:
 
 - stop
 - do not search for random work
+
+You must read the active plan file in full before opening the active issue
+file. Do not start the TDD cycle having read only the issue.
+
+- Resolve the plan path from `current-task.md`'s `Active Plan` field. Read
+  that file before the issue file, every time — even if you were only given
+  an issue name/number.
+- If `current-task.md` is missing, stale, or does not name a plan for the
+  issue you were given, fall back to the issue file's `Related Plan` field to
+  find and read the plan.
 
 If active plan or active issue cannot be found:
 
@@ -88,7 +98,7 @@ For the active issue:
 Command selection guidance:
 
 - When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer running tests and scripts with `bun` (e.g. `bun test`, `bun run <script>`) rather than node/npm/pnpm/yarn. Do not change the project's declared preference if it explicitly uses a different manager.
-- If the detected project tooling is ambiguous, do not guess — consult the user or `plan-code`/`manage-project-context` output (project-context.md) before choosing a command.
+- If the detected project tooling is ambiguous, do not guess — consult the user or `planner`/`manage-project-context` output (project-context.md) before choosing a command.
 6. Confirm the test fails for the expected reason.
 7. Implement the smallest change.
 8. Run the test again.
@@ -175,7 +185,7 @@ the files actually changed against the issue's `Files` list.
   stop, set `current-task.md` to `BLOCKED`, and describe the drift instead of
   continuing silently.
 - Do not add files to the issue's `Files` list retroactively to make a drift
-  disappear. Update the issue file first only if the user or `plan-code`
+  disappear. Update the issue file first only if the user or `planner`
   confirms the extra scope is correct.
 
 ## When blocked
@@ -209,8 +219,14 @@ If the blocker needs user input, ask exactly one question at a time using the
 dump a list of questions in a single message. When the blocker has a concrete,
 enumerable set of choices (e.g. which of two approaches, yes/no, which file to
 touch), use the `question` tool's `options` so the user picks instead of
-typing free text — same convention `plan-code` uses for its clarification
+typing free text — same convention `planner` uses for its clarification
 questions.
+
+Any closed-choice question (2–4 concrete options) must use `question.options`,
+never free text. Keep labels short (1–3 words) and explicit enough to act on
+without reading the description — e.g. `Yes` / `No` for a binary choice, or
+short distinct names for 3–4 choices. Reserve free-text answers for genuinely
+open-ended questions with no enumerable set of choices.
 
 ## Resuming after BLOCKED
 
@@ -257,7 +273,7 @@ On `Status: DONE`, also look at the active issues file
   <title> is next, TODO`) — do not start it, just record it so the next
   session does not need the issue number restated
 - if none exists (all issues `DONE`), set `Next Step` to say the plan is
-  fully implemented and recommend `review-code`
+  fully implemented and recommend `reviewer`
 
 ### Resuming with "continue" / "next"
 

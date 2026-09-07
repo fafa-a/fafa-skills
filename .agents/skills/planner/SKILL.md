@@ -1,9 +1,9 @@
 ---
-name: plan-code
+name: planner
 description: Aggressively clarify a code task by scanning the relevant files first, write an evidence-based mini PRD, and split it into small TDD issues without coding.
 ---
 
-# Plan Code
+# Planner
 
 Use this skill before implementation.
 
@@ -22,7 +22,7 @@ This skill plans, clarifies, and splits work. It never writes product code, test
 
 ## Responsibilities
 
-`plan-code` combines:
+`planner` combines:
 
 - targeted repository reconnaissance before clarification
 - grill-me style clarification (challenge the user's thinking)
@@ -99,7 +99,7 @@ to the plan yet; the plan does not exist until clarification is complete.
 Before writing the plan, inspect which libraries are already installed that are relevant to the task:
 
 - For each relevant dependency, note key types, functions, and patterns it exposes.
-- Document them in the plan so `implement-tdd` does not need to guess or reinvent.
+- Document them in the plan so `implement` does not need to guess or reinvent.
 
 Example output:
 
@@ -118,7 +118,7 @@ The main goal is to help the user discover blind spots in their own thinking.
 After reconnaissance, challenge the request by asking probing questions. Ask
 before creating or updating any plan, issue, or current-task file.
 
-Read `.agents/skills/plan-code/clarification-checklist.md` for what to
+Read `.agents/skills/planner/clarification-checklist.md` for what to
 challenge and what to avoid.
 
 ### Question depth: risk-based, not vibes-based
@@ -144,7 +144,7 @@ reconnaissance proves ALL of:
 If reconnaissance is inconclusive about which bucket applies, default to the
 aggressive mode.
 
-Same one-question-at-a-time, `question`-tool convention as `implement-tdd`'s
+Same one-question-at-a-time, `question`-tool convention as `implement`'s
 blocked-question flow — only the trigger differs (upfront clarification here
 vs. mid-execution blocker there).
 
@@ -167,6 +167,10 @@ vs. mid-execution blocker there).
   strategy, a data shape, yes/no), use the `question` tool's `options` so the
   user picks instead of typing free text. Reserve free-text/custom answers for
   genuinely open-ended questions.
+- Any closed-choice question (2–4 concrete options) must use `question.options`,
+  never free text. Keep labels short (1–3 words) and explicit enough to act on
+  without reading the description — e.g. `Yes` / `No` for a binary choice, or
+  short distinct names for 3–4 choices.
 - Do not proceed to planning while blocking questions remain unanswered.
 
 ### After questioning
@@ -182,7 +186,7 @@ the delta before drafting the plan.
 ## Planning modes
 
 Choose one mode, then read only that mode's section in
-`.agents/skills/plan-code/modes.md`: Bugfix, Feature, Refactor, Test-only, or
+`.agents/skills/planner/modes.md`: Bugfix, Feature, Refactor, Test-only, or
 Spike.
 
 ## Docs-aware behavior
@@ -231,7 +235,7 @@ Issues are local TDD tasks, not GitHub issues.
 
 Each issue must be small enough for one TDD cycle.
 
-Each issue must be self-contained: `implement-tdd` starts every issue in a
+Each issue must be self-contained: `implement` starts every issue in a
 fresh session with no memory of this planning conversation. Fill the issue's
 `Context` section (see `issue-template.md`) with the current behavior, exact
 relevant symbols/signatures, and which library types/APIs to use — do not
@@ -274,15 +278,21 @@ Write these files only after clarification is complete. Set:
 - issue statuses `TODO`
 
 The active issue is selected for implementation, but is not authorized to run.
-The user must explicitly approve the plan and issue set, for example:
-`APPROVED: implement plan <task-slug>, starting with issue 1`.
-Record the exact approval and date in the plan and set current task status to
-`READY` only after receiving it. A changed plan, issue list, or scope invalidates
-the approval and returns the task to `AWAITING_APPROVAL`.
+Ask for approval using the `question` tool with explicit, unambiguous
+options, e.g.:
+
+- `Approve — start issue 1`
+- `Not yet`
+
+Never interpret silence, a generic acknowledgement, or a request to continue
+as approval — only the explicit "approve" option counts. Record the exact
+answer and date in the plan and set current task status to `READY` only after
+receiving it. A changed plan, issue list, or scope invalidates the approval
+and returns the task to `AWAITING_APPROVAL`.
 
 ## Session boundary
 
-Do not hand off to `implement-tdd` in the current conversation. After the plan
+Do not hand off to `implement` in the current conversation. After the plan
 and issues are written, tell the user to open another terminal/session and run
 the implementation agent there, providing the plan slug and active issue. This
 keeps planning evidence and implementation context separate.
@@ -312,7 +322,7 @@ Return only:
 - blocking questions, if any
 - approval status (always explicit)
 - next action: ask the user to open another terminal/session and run
-  `implement-tdd` after explicit approval; never perform that handoff in this
+  `implement` after explicit approval; never perform that handoff in this
   session
 
 Do not include a long explanation.

@@ -43,7 +43,7 @@ Last verified: <date manage-project-context last ran, full run, refresh, or part
 ## Key Libraries
 
 <!-- One entry per major dependency: purpose + core types/APIs to reuse,
-     so plan-code and implement-tdd don't guess or reinvent them. -->
+     so planner and implement don't guess or reinvent them. -->
 
 -
 
@@ -51,11 +51,11 @@ Last verified: <date manage-project-context last ran, full run, refresh, or part
 
 - Baseline score:
 - Captured on:
-- review-code compares future scans against this baseline.
+- reviewer compares future scans against this baseline.
 
 ## Diff Size Budget Override
 
-<!-- Optional. Default budget (see review-code): 6 files / 150 lines
+<!-- Optional. Default budget (see reviewer): 6 files / 150 lines
      excluding tests. Only fill this in if this project needs a different
      number. -->
 
