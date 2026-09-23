@@ -1,7 +1,8 @@
 ---
+
 name: planner
-description: Aggressively clarify a code task by scanning the relevant files first, write an evidence-based mini PRD, and split it into small TDD issues without coding.
----
+description: Aggressively clarify a code task by scanning the relevant files first, write an evidence-based mini PRD, and split it into small TDD issues without coding
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Planner
 
@@ -24,12 +25,12 @@ This skill plans, clarifies, and splits work. It never writes product code, test
 
 `planner` combines:
 
-- targeted repository reconnaissance before clarification
-- grill-me style clarification (challenge the user's thinking)
-- docs-aware planning
-- mini PRD
-- issue breakdown for TDD
-- current task initialization
+* targeted repository reconnaissance before clarification
+* grill-me style clarification (challenge the user's thinking)
+* docs-aware planning
+* mini PRD
+* issue breakdown for TDD
+* current task initialization
 
 It replaces a multi-step flow like:
 
@@ -41,24 +42,24 @@ with one compact workflow.
 
 ## Absolute rules
 
-- Do not implement code.
-- Do not edit product files.
-- Do not create tests.
-- Do not refactor.
-- Do not install dependencies.
-- Do not create huge plans.
-- Do not split work into fake issues.
-- Do not create a plan or issue files before the user answers the blocking questions.
-- Do not mark a plan ready for implementation without explicit user approval.
-- Do not interpret silence, a generic acknowledgement, or a request to continue as approval.
+* Do not implement code.
+* Do not edit product files.
+* Do not create tests.
+* Do not refactor.
+* Do not install dependencies.
+* Do not create huge plans.
+* Do not split work into fake issues.
+* Do not create a plan or issue files before the user answers the blocking questions.
+* Do not mark a plan ready for implementation without explicit user approval.
+* Do not interpret silence, a generic acknowledgement, or a request to continue as approval.
 
 ## Must read first
 
 Follow the shared startup read order in `.agents/agent-rules.md` (skip plan/issue
 files — there is no active task yet). In addition, read:
 
-- `.agents/references.md` only if needed
-- library dependency files (`package.json`, `Cargo.toml`, etc.) for relevant deps
+* `.agents/references.md` only if needed
+* library dependency files (`package.json`, `Cargo.toml`, etc.) for relevant deps
 
 ## Phase 0: evidence-first reconnaissance
 
@@ -81,10 +82,13 @@ not on generic checklists.
 
 Do not burn your own context doing broad exploration. Delegate:
 
-- broad "where does X live / how does Y work" searches to the `explore`
-  subagent (read-only, fast) via the `task` tool
-- external library/dependency research (unclear API, upstream source,
-  version-specific behavior) to the `scout` subagent via the `task` tool
+* broad "where does X live / how does Y work" searches to the `explore`
+  subagent (read-only, fast)
+* repository precedent searches ("how do we already do this?") to `pattern-scout`
+  via the subagent tool
+* external library/dependency documentation (unclear API, version-specific
+  behavior) through Context7; use the built-in `general` subagent for broader
+  upstream source research when documentation is insufficient
 
 Keep your own reads focused on the small set of files you need to state
 current behavior precisely and to draft questions. Use the subagents' returned
@@ -94,12 +98,21 @@ Record a short reconnaissance note in your working context before questioning:
 `Observed`, `Likely impact`, `Unknown`, and `Files inspected`. Do not write it
 to the plan yet; the plan does not exist until clarification is complete.
 
+## Find existing repository patterns
+
+Before proposing a new structure or API, determine whether the repository already
+solves an equivalent problem. Use `pattern-scout` when this requires more than a
+small local read. Record the strongest precedent in the plan.
+
+Do not force reuse when the cases are materially different. The goal is consistent
+responsibility and conventions, not superficial deduplication.
+
 ## Inspect available libraries
 
 Before writing the plan, inspect which libraries are already installed that are relevant to the task:
 
-- For each relevant dependency, note key types, functions, and patterns it exposes.
-- Document them in the plan so `implement` does not need to guess or reinvent.
+* For each relevant dependency, note key types, functions, and patterns it exposes.
+* Document them in the plan so `implement` does not need to guess or reinvent.
 
 Example output:
 
@@ -126,20 +139,20 @@ challenge and what to avoid.
 Use the aggressive mode (5-10 decision-forcing questions) if reconnaissance
 shows ANY of:
 
-- touches authentication, authorization, or permission checks
-- touches payment, billing, or money-affecting logic
-- touches a public API contract (breaking change risk)
-- involves a data migration or irreversible data change
-- touches more than one service/module boundary
-- security-sensitive I/O (file paths, shell commands, deserialization, SQL)
+* touches authentication, authorization, or permission checks
+* touches payment, billing, or money-affecting logic
+* touches a public API contract (breaking change risk)
+* involves a data migration or irreversible data change
+* touches more than one service/module boundary
+* security-sensitive I/O (file paths, shell commands, deserialization, SQL)
 
 Use the light mode (1-2 questions, or zero if truly unambiguous) only when
 reconnaissance proves ALL of:
 
-- single file or single narrow module
-- no schema/data/API contract change
-- fully reversible (a revert has no side effects)
-- behavior described by the user matches what the code already does elsewhere
+* single file or single narrow module
+* no schema/data/API contract change
+* fully reversible (a revert has no side effects)
+* behavior described by the user matches what the code already does elsewhere
 
 If reconnaissance is inconclusive about which bucket applies, default to the
 aggressive mode.
@@ -150,35 +163,35 @@ vs. mid-execution blocker there).
 
 ### How to question
 
-- Be direct. Challenge concretely, do not list generic categories.
-- Reference user's actual words, not abstract templates.
-- Make questions decision-forcing: present the concrete choice and its impact
+* Be direct. Challenge concretely, do not list generic categories.
+* Reference user's actual words, not abstract templates.
+* Make questions decision-forcing: present the concrete choice and its impact
   where possible. Include boundary cases, failure behavior, compatibility,
   security, data migration, observability, and rollback questions when relevant.
-- Cite the inspected file/symbol that triggered each question.
-- Stop only when every decision that changes behavior, scope, data, or API is
+* Cite the inspected file/symbol that triggered each question.
+* Stop only when every decision that changes behavior, scope, data, or API is
   answered or explicitly delegated to an assumption the user accepts.
-- Do not ask questions you could answer yourself by reading the codebase.
-- Ask exactly one question at a time, using the `question` tool, and wait for
+* Do not ask questions you could answer yourself by reading the codebase.
+* Ask exactly one question at a time, using the `question` tool, and wait for
   the answer before asking the next one. Do not dump a list of questions in a
   single message. If an answer reveals a new affected area, scan that area
   before asking the next question.
-- When a question has a concrete, enumerable set of choices (a mode, a
+* When a question has a concrete, enumerable set of choices (a mode, a
   strategy, a data shape, yes/no), use the `question` tool's `options` so the
   user picks instead of typing free text. Reserve free-text/custom answers for
   genuinely open-ended questions.
-- Any closed-choice question (2–4 concrete options) must use `question.options`,
+* Any closed-choice question (2–4 concrete options) must use `question.options`,
   never free text. Keep labels short (1–3 words) and explicit enough to act on
   without reading the description — e.g. `Yes` / `No` for a binary choice, or
   short distinct names for 3–4 choices.
-- Do not proceed to planning while blocking questions remain unanswered.
+* Do not proceed to planning while blocking questions remain unanswered.
 
 ### After questioning
 
 Every unresolved point becomes either:
 
-- an explicit assumption recorded in the plan
-- something the user confirmed and is now locked in
+* an explicit assumption recorded in the plan
+* something the user confirmed and is now locked in
 
 If answers materially change scope, repeat targeted reconnaissance and surface
 the delta before drafting the plan.
@@ -197,10 +210,19 @@ Do not read docs to sound smarter.
 
 Use docs when:
 
-- a library API is unclear
-- a tool command is unclear
-- the project config is ambiguous
-- implementation would otherwise rely on guessing
+* a library API is unclear
+* a tool command is unclear
+* the project config is ambiguous
+* implementation would otherwise rely on guessing
+
+For external library or tool documentation:
+
+* use Context7 as the default documentation source
+* determine the version used by the repository first and use matching
+  version-specific documentation when available
+* prefer existing repository patterns over generic documentation examples
+* if Context7 is insufficient, use upstream source or official documentation
+  rather than guessing
 
 ## Plan file structure
 
@@ -208,11 +230,11 @@ Every plan must include a `## Available library types/APIs` section listing key 
 
 Every plan must also include:
 
-- `## Reconnaissance` with observed current behavior and inspected files
-- `## Decisions Locked` with the user's answers
-- `## Approval` with `Status: AWAITING_APPROVAL`, approval scope, and the exact
+* `## Reconnaissance` with observed current behavior and inspected files
+* `## Decisions Locked` with the user's answers
+* `## Approval` with `Status: AWAITING_APPROVAL`, approval scope, and the exact
   instruction that implementation must wait for explicit approval
-- concrete file/symbol references for each issue
+* concrete file/symbol references for each issue
 
 ## Mini PRD
 
@@ -220,12 +242,12 @@ Create a mini PRD inside the plan file.
 
 It must answer:
 
-- what problem are we solving?
-- who needs it?
-- what behavior is expected?
-- what is out of scope?
-- which library types/APIs are relevant?
-- how do we know it is done?
+* what problem are we solving?
+* who needs it?
+* what behavior is expected?
+* what is out of scope?
+* which library types/APIs are relevant?
+* how do we know it is done?
 
 ## Issue breakdown
 
@@ -244,20 +266,20 @@ re-exploring the codebase.
 
 A good issue:
 
-- has one clear behavior
-- is testable
-- has clear acceptance criteria
-- references which library types/APIs to use
-- usually needs 1–2 focused tests
-- touches a small set of related files
+* has one clear behavior
+* is testable
+* has clear acceptance criteria
+* references which library types/APIs to use
+* usually needs 1–2 focused tests
+* touches a small set of related files
 
 A bad issue:
 
-- needs 5+ tests
-- touches 8+ files
-- mixes unrelated changes
-- combines refactor and feature work
-- cannot be validated independently
+* needs 5+ tests
+* touches 8+ files
+* mixes unrelated changes
+* combines refactor and feature work
+* cannot be validated independently
 
 If an issue is too large, split it.
 
@@ -273,16 +295,16 @@ Write or update:
 
 Write these files only after clarification is complete. Set:
 
-- plan `Status: READY` and `Approval Status: AWAITING_APPROVAL`
-- current task `Status: AWAITING_APPROVAL`
-- issue statuses `TODO`
+* plan `Status: READY` and `Approval Status: AWAITING_APPROVAL`
+* current task `Status: AWAITING_APPROVAL`
+* issue statuses `TODO`
 
 The active issue is selected for implementation, but is not authorized to run.
 Ask for approval using the `question` tool with explicit, unambiguous
 options, e.g.:
 
-- `Approve — start issue 1`
-- `Not yet`
+* `Approve — start issue 1`
+* `Not yet`
 
 Never interpret silence, a generic acknowledgement, or a request to continue
 as approval — only the explicit "approve" option counts. Record the exact
@@ -306,23 +328,41 @@ project context only when it is durable and useful beyond this task.
 
 Initialize `.agents/state/current-task.md` with:
 
-- active plan
-- active issue
-- status
-- next step
-- do-not-do list
+* active plan
+* active issue
+* status
+* next step
+* do-not-do list
 
 ## Output
 
-Return only:
+Return a compact planning report only:
 
-- plan file path
-- issue file path
-- active issue
-- blocking questions, if any
-- approval status (always explicit)
-- next action: ask the user to open another terminal/session and run
-  `implement` after explicit approval; never perform that handoff in this
-  session
+```text
+Plan: <path>
+Issues: <path>
+Mode: <Bugfix | Feature | Refactor | Test-only | Spike>
+Decisions:
+- <short locked decision>
+Issues:
+1. <issue> — <one-line goal>
+2. <issue> — <one-line goal>
+Approval: AWAITING_APPROVAL | APPROVED
+Next: <one action>
 
-Do not include a long explanation.
+Orchestrator summary:
+Goal: <one sentence>
+Steps:
+1. <short implementation step>
+2. <short implementation step>
+Affected: <main files/modules only>
+Acceptance: <compact acceptance criteria>
+```
+
+The `Orchestrator summary` is a compact projection of the approved plan for direct
+user display. Preserve every ordered implementation step, but do not repeat
+reconnaissance, rationale, library notes, or other plan prose.
+
+Omit empty sections. Use short bullets/numbered items. No prose recap.
+Blocking clarification must use one question at a time; closed choices use the
+question tool with short options.

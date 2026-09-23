@@ -1,25 +1,35 @@
 # Fafa Skills Repository
 
-This repository contains lightweight coding agent skills.
+This repository contains the Fafa OpenCode V2 coding workflow.
 
-Core workflow:
+## Workflow
 
-1. `manage-project-context` prepares a target repository.
-2. `planner` clarifies, documents, and splits work into TDD issues.
-3. `implement` implements one TDD issue at a time.
-4. `reviewer` reviews against the plan and creates follow-up issues when needed.
+1. `manage-project-context` prepares or refreshes a target repository.
+2. `planner` investigates, clarifies, writes the plan/issues, and requests approval.
+3. `implement` executes one approved TDD issue in a fresh session.
+4. `reviewer` verifies the diff and delegates focused inspection to specialists.
 
-Each step also has a companion primary agent in `.opencode/agent/` with the
-same name, enforcing the skill's rules via real permissions (e.g. `planner`
-cannot edit files or run bash beyond read-only git inspection; `reviewer`
-cannot edit files). Prefer switching to these agents (Tab key) over relying on
-`build` plus prose discipline alone.
+## Primary agents
 
-Rules:
+- `planner`
+- `implement`
+- `reviewer`
+- `manage-project-context`
 
-- Keep skills small.
-- Avoid AI slop.
-- Prefer simple, explicit instructions.
-- Do not add workflow complexity unless it solves a real problem.
-- Do not copy large external processes blindly.
-- Each skill must have one clear responsibility.
+## Specialist subagents
+
+- `pattern-scout` — finds established repository precedents.
+- `css-reviewer` — styling/layout review only.
+- `ts-reviewer` — JavaScript/TypeScript review only.
+- built-in `explore` — location/read-only reconnaissance.
+- built-in `general` — external/version-specific research when needed.
+
+OpenCode V2 agent definitions live in `.opencode/agents/` and use ordered `permissions` rules. Skills remain in `.agents/skills/`, which OpenCode V2 supports as a compatibility skill source.
+
+## Rules
+
+- Keep primary ownership clear: planner decides, implement executes, reviewer judges.
+- Subagents return evidence/findings; they do not own workflow state or final decisions.
+- Keep user-facing responses report-like: bullets, numbered steps, short sentences.
+- Add workflow complexity only when it fixes a demonstrated weakness.
+- Each skill or agent must have one clear responsibility.

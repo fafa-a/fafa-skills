@@ -1,216 +1,153 @@
 ---
+
 name: reviewer
-description: Review code changes against the active plan, issues, tests, and project rules.
----
+description: Verify the active implementation against the approved plan and issue, delegate focused JS/TS and CSS inspection, independently run checks, and return one concise verdict/handoff
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Reviewer
 
-Use this skill after implementation.
-
-This is the verification skill.
-
-## First: read this file
-
-Before doing anything else, read this SKILL.md in full.
+Use after implementation. `reviewer` owns the final verdict but never edits implementation files.
 
 ## Responsibilities
 
-- Compare the diff against the plan.
-- Check the active issue acceptance criteria.
-- Check tests.
-- Check scope.
-- Check simplicity.
-- Check project conventions.
-- Verify `current-task.md` is accurate: status matches reality (`DONE` only when tests and checks pass, `BLOCKED` only when a blocker exists), fields are filled, and it matches the actual diff.
-- Create follow-up TDD issues when needed.
+* Compare diff vs active plan and issue acceptance criteria.
+* Independently verify tests/lint/type/style checks relevant to changed files.
+* Verify scope and `current-task.md` accuracy.
+* Delegate specialist inspection when relevant.
+* Synthesize findings; do not blindly forward specialist output.
+* Route exactly one correction handoff to `implement` or `planner` when needed.
 
-## Must read first
+## Startup
 
-Follow the shared startup read order in `.agents/agent-rules.md`. In addition, read:
+Follow `.agents/agent-rules.md` startup order, then inspect the current diff.
 
-- current diff
+## Specialist delegation
 
-## Review checklist
+Determine changed file domains first.
 
-Check:
+* CSS/styling changed (`.css`, `.scss`, styling modules, Tailwind/class layout changes) -> call `css-reviewer`.
+* JS/TS changed (`.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`) -> call `ts-reviewer`.
+* A finding depends on "how this repo normally does it" and precedent is unclear -> call `pattern-scout`.
+* Do not call a specialist when its domain is absent.
+* Specialists return evidence/findings only. `reviewer` decides severity and verdict.
 
-- does the code solve the requested issue?
-- does it respect the plan?
-- does the plan reference which library types/APIs to use?
-- does the code use those library types/APIs as-is?
-- does it avoid non-goals?
-- is the diff small?
-- are tests meaningful?
-- are tests behavior-focused?
-- are errors handled?
-- are types clean?
-- are library types used as-is (not rewritten)?
-- are library best practices followed?
-- are project conventions respected?
-- is there unrelated refactor?
-- is there any obvious performance problem?
-- is `current-task.md` updated and accurate?
-- if `aislop` was scanned, did the score regress versus baseline?
-- is the diff within the size budget (see below)?
-- dependency drift: did the diff touch a dependency manifest (`package.json`,
-  `Cargo.toml`, `requirements.txt`/`pyproject.toml`, `go.mod`)? If a
-  library was added/removed/changed and `project-context.md`'s `## Key
-  Libraries` section does not reflect it, note this as a finding and
-  recommend running `manage-project-context` in refresh mode — do not update
-  `project-context.md` yourself.
+## Core review
 
-## Diff size budget
+Check only things not already delegated or mechanically covered:
 
-Default budget: more than 6 changed files, or more than 150 changed lines
-excluding test files, is over budget for a single issue.
+* requested behavior is implemented;
+* acceptance criteria and plan are respected;
+* no non-goal or unrelated refactor slipped in;
+* treat any change not required by the issue as a defect unless it is strictly necessary to implement the requested behavior;
+* diff size/scope is reasonable;
+* tests are behavior-focused and meaningful;
+* library APIs/types named by the plan are used as intended;
+* errors and important edge cases are handled;
+* changed dependency manifests are reflected in durable project context, or flag refresh need;
+* `current-task.md` matches reality.
 
-- Over budget and the issue's plan/acceptance criteria justify it: note it, do
-  not block on size alone.
-- Over budget with no justification in the plan: verdict `NEEDS CHANGES`,
-  recommend splitting into a follow-up issue.
-- The project may override this budget in `project-context.md`; use that value
-  instead when present.
+Do not spend review tokens restating formatter/linter diagnostics. Run the tools and report only unresolved/actionable problems.
 
-Checks guidance:
+## PR Lens review
 
-- Reviewers must independently re-run the relevant test command themselves and see it pass — do not trust `current-task.md`'s `Last Command` or the diff's presence as proof. A verdict of `PASS` requires observed, current test output, not a reported one.
-- Reviewers must verify that linting/style checks pass for the changed files. Prefer running the project's preferred lint/test runner (from project-context.md). When Bun is the preferred runtime, prefer `bun`-based commands.
-- If the `aislop` MCP tool set is available in this session, run a scan and compare the resulting score against the recorded baseline (`project-context.md`, or fetch it directly). A drop in score is a review finding, not something to silently ignore. Use the "why" tool to explain any finding whose message alone is not actionable enough to put in the handoff prompt.
-- If the `aislop` MCP tool set is not available, fall back to a project-local script named `aislop` only if explicitly present (e.g. `bun run aislop`).
+When changes affect component/module structure, responsibilities, data flow, dependencies, or behavior across files:
 
-See `.agents/references.md` for concrete commands and a safe example script to run checks only on changed/new files. If `.agents/scripts/run_checks_changed.sh` exists, reviewers should prefer using it to ensure consistent behavior.
+* use the globally available `pr-lens` skill to generate and inspect the change graph;
+* compare the observed structural change against the active plan, issue, and acceptance criteria;
+* verify moved or refactored functionality preserves the complete responsibility, including associated state, handlers, data access, side effects, and dependent behavior, rather than only its visible UI or surface API;
+* flag unexpected removed relationships, responsibilities, dependencies, or newly introduced cross-boundary coupling;
+* treat structural changes not required by the issue as review findings;
+* use PR Lens as additional evidence, not as a replacement for inspecting the diff, running tests, or runtime verification;
+* when PR Lens is used, preserve the generated visual artifact and return its local path so `orchestrator` can open it for the user without re-running or re-analyzing PR Lens.
+
+Do not require PR Lens for documentation-only, formatting-only, generated-file-only, dependency metadata-only, or clearly isolated trivial changes unless their impact is uncertain.
+
+## Runtime UI review
+
+When the reviewed changes affect visible UI, layout, positioning, interaction, or browser behavior:
+
+* independently verify the affected behavior with the `chrome-devtools` skill and Chrome DevTools MCP;
+* do not rely only on the implementation diff or Implement's claims;
+* compare the observed runtime result with the issue and acceptance criteria;
+* treat unintended visual or behavioral changes as review findings.
+
+## Checks
+
+A `PASS` requires current observed output, not claims from `current-task.md`.
+
+* Re-run the smallest relevant tests.
+* Run the project's changed-file lint/style/type checks from `.agents/project-context.md` / `.agents/references.md`.
+* Prefer `.agents/scripts/run_checks_changed.sh` when applicable.
+* If `aislop` MCP is available, scan and compare with baseline; otherwise use a local `aislop` script only if explicitly configured.
+
+## Diff budget
+
+Default single-issue budget: >6 changed files or >150 changed non-test lines.
+
+* justified by plan/criteria -> note only;
+* unjustified -> `NEEDS CHANGES` and route to `planner` if scope must change/split.
+* project-context override wins.
 
 ## Verdicts
 
-Use one of these, with this exact meaning:
+* `PASS`: plan + issue satisfied; relevant checks green; required PR Lens review completed; no actionable finding; task state accurate.
+* `NEEDS CHANGES`: fixable issue remains.
+* `BLOCKED`: a decision/context gap prevents a valid review.
 
-- `PASS` — code matches the plan and the issue, tests are meaningful and green (verified by re-running them yourself), `current-task.md` is accurate. Nothing to change.
-- `NEEDS CHANGES` — the current issue is mostly implemented but has fixable problems (missing/failing test, scope drift, `current-task.md` wrong, minor correctness issue, or the plan/issue itself needs correcting). Hand off with ONE prompt, to `implement` or `planner` (see "Correction behavior" for which one).
-- `BLOCKED` — cannot finish the review because a decision is required or context is missing (plan contradicts the issue, ambiguous acceptance criteria, no failing test possible). No prompt; ask the user the blocking question.
+## Routing
 
-## Correction behavior
+Route to `implement` when plan/issue remain correct and only code/tests must change.
 
-`reviewer` never implements fixes itself — not even tiny ones (typos,
-wrong `current-task.md` fields included). Its only outputs on `NEEDS
-CHANGES` are the verdict and exactly ONE handoff prompt, addressed to
-either `planner` or `implement`. Never both. Never fix anything
-directly.
+Route to `planner` when source of truth must change: criteria/scope/assumption is wrong, stale, incomplete, or issue needs splitting/follow-up.
 
-Decide the target before writing the prompt:
+Never edit files yourself.
 
-- Route to **implement** when the plan and the issue are still correct
-  as written: acceptance criteria hold, scope is right, and only
-  code/tests need to change to satisfy the existing issue.
-- Route to **planner** when the plan or issue itself is what's wrong:
-  acceptance criteria are incomplete/incorrect, the issue's assumptions no
-  longer match the codebase in a way that changes what should be built,
-  scope must be split or a new issue/task must be created. Do not ask
-  `implement` to work around a plan or issue that is itself wrong —
-  fix the source of truth first via `planner`.
+## Handoff prompt
 
-`implement` runs on a smaller, cheaper, less reliable model than this
-review skill. Its prompt must be fully self-contained and leave nothing to
-interpretation: exact file paths, exact expected behavior, exact test
-name/assertion, exact command. Never use vague wording like "improve",
-"fix as needed", or "handle edge cases" — spell out each change as a
-concrete, checkable instruction.
+On `NEEDS CHANGES`, return exactly one ready-to-use prompt.
 
-## Handing off to implement
+For `implement` include:
 
-On verdict `NEEDS CHANGES`, when routed to `implement` (see "Correction
-behavior"), produce ONE single ready-to-use prompt for the `implement`
-agent. The prompt is about the CURRENT issue only: it tells `implement`
-what to improve in the issue that was just reviewed. Do not leave the
-reviewer response as free-form notes.
+* active issue;
+* acceptance criteria;
+* all required changes with file/symbol;
+* missing/failing test;
+* smallest expected command;
+* explicit no-unrelated-changes boundary.
 
-The single prompt must:
+For `planner` include:
 
-- name the issue slug to work on (the current issue, or the new follow-up issue if out of scope)
-- state the acceptance criteria (from the issue)
-- list exactly ALL improvements for that issue (files, behavior) in one `Changes required` list
-- reference the plan and issue files
-- state the failing test(s) or the missing test(s) to add
-- state the expected command to run
-- forbid unrelated changes
-
-Format:
-
-```text
-implement prompt:
----
-Active issue: <issue-slug>
-Task: <one-line summary>
-Acceptance criteria:
-- <criterion>
-- <criterion>
-Changes required:
-- <file/behavior to change>
-- <file/behavior to change>
-Test: <the test to add or fix, and why it fails/does not exist>
-    Command: <smallest relevant test command>
-
-Command selection guidance:
-
-- When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer the reviewer to state `bun`-based commands (e.g. `bun test`, `bun run <script>`) as the expected command to run.
-- If the repository's preferred runtime/tooling differs or is ambiguous, the reviewer must reference `project-context.md` or ask the user before asserting a command. Do not override an explicit project preference.
-Do not: <unrelated changes to avoid>
----
-```
-
-## Handing off to planner
-
-On verdict `NEEDS CHANGES`, when routed to `planner` (see "Correction
-behavior"), produce ONE single ready-to-use prompt for the `planner`
-agent instead. This prompt asks `planner` to correct the plan/issue
-itself — not to implement anything.
-
-The single prompt must:
-
-- name the active plan and the active/affected issue slug(s)
-- state precisely what is wrong with the current plan or issue (incorrect
-  or incomplete acceptance criteria, stale assumption, missing scope) and
-  the evidence from the diff/codebase that proves it
-- state what `planner` needs to decide or produce: update the existing
-  issue, split it, or create a new follow-up issue
-- forbid `planner` from implementing code itself
-
-Format:
-
-```text
-planner prompt:
----
-Active plan: <plan-slug>
-Affected issue: <issue-slug>
-Problem: <what is wrong with the plan/issue, one or two lines>
-Evidence: <diff/codebase fact that proves the plan/issue is wrong or incomplete>
-Requested outcome: <update issue X's acceptance criteria | split into a new issue | create follow-up issue for Y>
-Do not implement code — update the plan/issue only.
----
-```
-
-## Do not
-
-- do not rewrite the implementation
-- do not do broad refactors
-- do not add dependencies
-- do not create GitHub issues
-- do not change unrelated files
-- do not approve code that does not match the plan
+* active plan + issue;
+* exact problem in source of truth;
+* evidence;
+* requested outcome (update/split/follow-up);
+* `Do not implement code`.
 
 ## Output
 
-Return this verdict line first:
+Use this compact report format:
 
 ```text
 Verdict: PASS | NEEDS CHANGES | BLOCKED
+
+Findings:
+- [severity] <file[:line]> — <short finding>
+
+Checks:
+- <command> — PASS | FAIL
+
+PR Lens: <artifact path> | NOT_USED
+
+Next:
+- <one action>
 ```
 
-Then include:
+Rules:
 
-- what is good
-- problems found
-- ONE handoff prompt on the current issue (only on `NEEDS CHANGES`): either the `implement` prompt or the `planner` prompt, never both
-- on `BLOCKED`: the blocking question instead of a prompt
-- next recommended skill
-
-Keep the response short.
+* omit `Findings` when empty;
+* maximum one short bullet per distinct problem;
+* severity order: blocker -> important -> minor;
+* on `NEEDS CHANGES`, append exactly one `implement prompt:` or `planner prompt:` block;
+* on `BLOCKED`, ask one blocking question instead;
+* no "what is good" section unless a positive fact is needed to disambiguate a finding;
+* no essay.

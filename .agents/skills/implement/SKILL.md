@@ -63,7 +63,7 @@ If active plan or active issue cannot be found:
 
 ## Domain skills
 
-After reading the active issue, check the available skills. If the issue touches a specific technology, load the relevant domain skill. Domain skills provide technology-specific rules and best practices. Control always stays with this skill.
+After reading the active issue, check available domain skills and load only those relevant to the technology being changed. Project rules still come from `AGENTS.md`, project context, the plan, and the issue. Control stays with `implement`.
 
 ## Default execution mode
 
@@ -85,13 +85,7 @@ For the active issue:
    "continue"/"next" resolution above, update `Active Issue` in
    `current-task.md` to that issue before doing anything else.
 2. Set `current-task.md` status to `IN_PROGRESS`.
-3. Inspect only directly relevant files — read the files/symbols the issue
-   points to and confirm the issue's assumptions still match the current
-   code (signatures, existing patterns, whether the described behavior
-   already exists). The issue may be stale or incomplete; verify before
-   coding instead of trusting the text blindly. If reality diverges from
-   the issue in a way that changes scope or approach, treat it as a
-   blocker (see "When blocked") instead of silently improvising.
+3. Inspect only directly relevant files and confirm the issue assumptions still match current code. If the issue names an existing precedent, verify it. If the intended repository pattern is unclear or the named precedent is stale, call `pattern-scout` once with the narrow question before coding. If reality changes scope or approach, block instead of silently re-planning.
 4. Write or update one failing test first.
 5. Run the smallest relevant test command.
 
@@ -99,11 +93,11 @@ Command selection guidance:
 
 - When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer running tests and scripts with `bun` (e.g. `bun test`, `bun run <script>`) rather than node/npm/pnpm/yarn. Do not change the project's declared preference if it explicitly uses a different manager.
 - If the detected project tooling is ambiguous, do not guess — consult the user or `planner`/`manage-project-context` output (project-context.md) before choosing a command.
-6. Confirm the test fails for the expected reason.
-7. Implement the smallest change.
-8. Run the test again.
-9. Refactor only if needed for clarity.
-10. Run the relevant checks.
+1. Confirm the test fails for the expected reason.
+2. Implement the smallest change.
+3. Run the test again.
+4. Refactor only if needed for clarity.
+5. Run the relevant checks.
 
 Checks guidance:
 
@@ -157,13 +151,6 @@ Avoid:
 - If a project vendors a library's source under a dedicated directory (e.g.
   `repos/<lib>`), treat it as read-only reference material: never import
   from it and never edit it unless explicitly asked.
-- If, while implementing, you notice recurring non-obvious usage patterns
-  for a library the project relies on heavily, consider creating or
-  updating a short pattern file at `agent-patterns/<lib>.md` summarizing
-  the idioms (constructors, error handling, common pitfalls) with examples
-  drawn from the real source or the project's own code. Keep it practical,
-  not exhaustive. This is optional and must not block or delay the active
-  issue.
 
 ## Refactor phase
 
@@ -241,6 +228,17 @@ If `current-task.md` status is `BLOCKED` at startup:
    `Status: IN_PROGRESS`.
 4. Never resume by assumption just because time has passed or the session is
    new.
+
+## Runtime UI verification
+
+When implementation changes visible UI, layout, positioning, interaction, or browser behavior:
+
+- use the `chrome-devtools` skill and Chrome DevTools MCP to verify the result in the running application;
+- reproduce the relevant interaction when needed;
+- verify the observable result instead of relying only on code inspection;
+- fix any regression introduced by the implementation before handing off to Reviewer.
+
+Do not use browser inspection when the change has no observable browser impact.
 
 ## Updating current-task
 

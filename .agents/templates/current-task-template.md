@@ -36,6 +36,8 @@ NONE | AWAITING_APPROVAL | READY | IN_PROGRESS | BLOCKED | DONE
 
 ## Notes
 
+<!-- Task-local handoff facts only. Durable conventions belong in AGENTS.md or project-context.md. -->
+
 -
 
 ## Approval

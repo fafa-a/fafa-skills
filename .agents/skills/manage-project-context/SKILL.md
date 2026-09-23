@@ -162,19 +162,21 @@ Create:
    └─ current-task.md
 ```
 
-Also scaffold, if missing, the companion permission-enforced agent files:
+Also scaffold, if missing, the OpenCode V2 permission-enforced primary and specialist agent files:
 
 ```text
-.opencode/agent/
+.opencode/agents/
 ├─ planner.md
 ├─ implement.md
 ├─ reviewer.md
-└─ manage-project-context.md
+├─ manage-project-context.md
+├─ pattern-scout.md
+├─ css-reviewer.md
+└─ ts-reviewer.md
 ```
 
-Copy these from this fafa-skills repository's own `.opencode/agent/` files
-verbatim (they define `permission` rules — e.g. `planner` denies `edit` and
-`bash` beyond read-only git inspection, `reviewer` denies `edit` — so the
+Copy these from this fafa-skills repository's own `.opencode/agents/` files
+verbatim (they use OpenCode V2 ordered `permissions` rules — e.g. `planner` can edit only workflow plan/issue/state files while product-code edits are denied; `reviewer` denies all edits — so the
 workflow's guardrails are enforced by the runtime in the target project, not
 only documented in prose). Also copy the root `opencode.json` snippet
 (`instructions: [".agents/agent-rules.md"]`), merging it into the target
@@ -182,7 +184,7 @@ project's existing `opencode.json` if one already exists rather than
 overwriting it.
 
 Do not scaffold these agent files if the target project already has its own
-`.opencode/agent/` definitions for these names — ask the user whether to merge
+`.opencode/agents/` definitions for these names — ask the user whether to merge
 or skip instead of overwriting.
 
 ## project-context.md content
@@ -267,6 +269,6 @@ Return:
 - aislop baseline score, if captured
 - files created
 - files preserved
-- `.opencode/agent/*.md` files scaffolded or skipped (and why)
+- `.opencode/agents/*.md` files scaffolded or skipped (and why)
 - ambiguous choices, if any
 - recommended next skill
