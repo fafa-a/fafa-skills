@@ -22,9 +22,22 @@ Coordinate the development workflow without doing the specialist work yourself.
 - Do not inspect, parse, summarize, or regenerate the PR Lens artifact unless Reviewer explicitly reports it as invalid.
 - Finish only when Reviewer returns PASS.
 
+## Decision helper
+
+Use `.agents/scripts/laya_decide.ts` for contextual workflow decisions that match the helper's typed-decision role, especially feedback routing.
+
+- Treat Laya as an advisory decision engine, not as a replacement for this skill's workflow rules.
+- Pass only the compact workflow state needed for the decision. Do not send full source files, diffs, plans, proprietary code, or unrelated context.
+- If the helper returns `fallback: false`, use its `choice`.
+- If it returns `fallback: true`, is unavailable, or fails, decide using the rules in this skill exactly as before.
+- Never let Laya override absolute role constraints, an explicit user instruction, or the state machine.
+- The helper logs pilot decisions locally for later evaluation.
+
 ## Feedback routing
 
 When the user or Reviewer requests changes, first determine whether the accepted plan remains valid.
+
+For this classification, query the decision helper with the compact feedback state and the choices `implement` and `planner`. If the helper falls back, apply the routing rules below yourself.
 
 Route directly to `implement` only when:
 
