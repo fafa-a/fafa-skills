@@ -7,6 +7,12 @@ description: Coordinate the Planner -> Implement -> Reviewer workflow until revi
 
 Coordinate the development workflow without doing the specialist work yourself.
 
+## Absolute role boundary
+
+- Never implement, edit, refactor, or fix product code, tests, or configuration yourself.
+- If any coding change is required, even a trivial one, delegate it to `implement`.
+- Workflow-only and presentation commands are allowed when they do not modify the implementation (for example opening a PR Lens artifact).
+
 ## Responsibilities
 
 - Track the current workflow state.
@@ -15,12 +21,23 @@ Coordinate the development workflow without doing the specialist work yourself.
 - Do not re-read or re-summarize the full plan when the `Orchestrator summary` is available.
 - Preserve every planned step in the summary; never omit steps.
 - Wait while the user interacts with Planner when clarification or approval is required.
-- Delegate implementation to a fresh `implement` child session.
-- Delegate review to a fresh `reviewer` child session.
+- Delegate the full approved plan to one fresh `implement` child session; that session executes all TODO issues sequentially.
+- Delegate review to one fresh `reviewer` child session only after all plan issues are DONE.
 - Classify feedback before deciding whether to return to `planner` or `implement`.
 - On Reviewer PASS, if Reviewer returned a PR Lens artifact path, open it with the platform-appropriate local command (for Linux, `xdg-open <path>`).
 - Do not inspect, parse, summarize, or regenerate the PR Lens artifact unless Reviewer explicitly reports it as invalid.
 - Finish only when Reviewer returns PASS.
+
+## Child-agent handoffs
+
+The repository Markdown files are the source of truth. Child agents already read
+`current-task.md`, the active plan, the active issue, and shared project rules.
+
+- Do not copy the full plan, issue list, conventions, or repository context into a child-agent prompt when those files are available.
+- Pass only the minimum routing information needed to start the correct work.
+- For `implement`, prefer: `Execute all TODO issues for the active plan from current-task.md in this session. Return one compact handoff when the plan is complete or blocked.`
+- For `reviewer`, prefer: `Review the completed active plan from current-task.md. Return the skill's compact verdict.`
+- Add extra context only when the source-of-truth files are missing, stale, ambiguous, or the user supplied new information not yet recorded there.
 
 ## Decision helper
 
@@ -71,6 +88,16 @@ Do not spend tokens reconstructing the summary from the full plan unless the fie
 
 If Planner updates the plan later, show the updated summary again before implementation resumes.
 
+## Implementation and review cadence
+
+Do not invoke `reviewer` after each issue.
+
+- Keep one `implement` child session alive for the whole active plan.
+- Let `implement` advance through all TODO issues and update task Markdown between issues.
+- Invoke `reviewer` only when every issue in the active plan is DONE.
+- Start `reviewer` in a fresh child session so implementation history is not carried into review context.
+- If implementation blocks, surface the blocker; do not invoke Reviewer just to diagnose an unfinished plan.
+
 ## Review result
 
 When Reviewer returns `PASS`:
@@ -78,6 +105,13 @@ When Reviewer returns `PASS`:
 - show the compact Reviewer result;
 - if `PR Lens` contains an artifact path, open that path directly for the user;
 - opening the artifact is presentation only and must not trigger another review or model pass.
+
+For normal successful transitions, keep user-visible status to a few factual lines.
+For `BLOCKED`, `NEEDS CHANGES`, command failure, or diagnostic work, preserve the
+child agent's concrete cause, evidence, failing check, and required next action;
+do not compress away information needed to understand or fix the problem.
+
+Do not add narration or repeat information already stored in the task Markdown.
 
 ## Maintenance workflows
 
@@ -104,6 +138,7 @@ WAITING_FOR_USER
    v
 IMPLEMENTING
    |
+   | all plan issues DONE
    v
 REVIEWING
    |

@@ -6,12 +6,12 @@ description: Verify the active implementation against the approved plan and issu
 
 # Reviewer
 
-Use after implementation. `reviewer` owns the final verdict but never edits implementation files.
+Use once after all issues in the active plan are implemented. `reviewer` owns the final verdict but never edits implementation files.
 
 ## Responsibilities
 
-* Compare diff vs active plan and issue acceptance criteria.
-* Independently verify tests/lint/type/style checks relevant to changed files.
+* Compare the completed diff against the active plan and all completed issue acceptance criteria.
+* Independently verify only the targeted tests/checks relevant to files changed across the plan.
 * Verify scope and `current-task.md` accuracy.
 * Delegate specialist inspection when relevant.
 * Synthesize findings; do not blindly forward specialist output.
@@ -19,16 +19,19 @@ Use after implementation. `reviewer` owns the final verdict but never edits impl
 
 ## Startup
 
-Follow `.agents/agent-rules.md` startup order, then inspect the current diff.
+Follow `.agents/agent-rules.md` startup order, then inspect the completed plan diff.
+
+Do not review while TODO or IN_PROGRESS issues remain. If the plan is incomplete,
+return `BLOCKED` with the unfinished issue(s) instead of performing a partial review.
 
 ## Specialist delegation
 
-Determine changed file domains first.
+Specialists are optional escalation tools, not default review steps.
 
-* CSS/styling changed (`.css`, `.scss`, styling modules, Tailwind/class layout changes) -> call `css-reviewer`.
-* JS/TS changed (`.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`) -> call `ts-reviewer`.
-* A finding depends on "how this repo normally does it" and precedent is unclear -> call `pattern-scout`.
-* Do not call a specialist when its domain is absent.
+* Do not call `ts-reviewer` merely because JS/TS files changed; use it only when the diff is materially complex, risky, or cannot be reviewed confidently without specialist analysis.
+* Do not call `css-reviewer` merely because styling files changed; use it only for significant visual/layout complexity or an unclear styling regression.
+* Call `pattern-scout` only when a concrete finding depends on repository precedent and that precedent is unclear.
+* Never call a specialist to duplicate checks already covered by the diff, targeted tests, lint/type tooling, or runtime verification.
 * Specialists return evidence/findings only. `reviewer` decides severity and verdict.
 
 ## Core review
@@ -50,7 +53,7 @@ Do not spend review tokens restating formatter/linter diagnostics. Run the tools
 
 ## PR Lens review
 
-When changes affect component/module structure, responsibilities, data flow, dependencies, or behavior across files:
+When the completed plan materially changes component/module structure, responsibilities, data flow, dependencies, or behavior across files:
 
 * use the globally available `pr-lens` skill to generate and inspect the change graph;
 * compare the observed structural change against the active plan, issue, and acceptance criteria;
@@ -64,9 +67,12 @@ Do not require PR Lens for documentation-only, formatting-only, generated-file-o
 
 ## Runtime UI review
 
-When the reviewed changes affect visible UI, layout, positioning, interaction, or browser behavior:
+When the completed plan materially affects visible UI, layout, positioning, interaction, or browser behavior that cannot be confidently verified from targeted tests alone:
 
-* independently verify the affected behavior with the `chrome-devtools` skill and Chrome DevTools MCP;
+* independently verify the affected behavior with Playwright CLI first;
+* keep the Playwright flow narrow: reproduce only the interactions changed by the completed plan;
+* use the `chrome-devtools` skill and Chrome DevTools MCP only when Playwright CLI cannot verify the behavior, fails in a way that needs browser-level diagnosis, or deeper runtime inspection is required;
+* do not use both tools by default;
 * do not rely only on the implementation diff or Implement's claims;
 * compare the observed runtime result with the issue and acceptance criteria;
 * treat unintended visual or behavioral changes as review findings.
@@ -75,14 +81,14 @@ When the reviewed changes affect visible UI, layout, positioning, interaction, o
 
 A `PASS` requires current observed output, not claims from `current-task.md`.
 
-* Re-run the smallest relevant tests.
-* Run the project's changed-file lint/style/type checks from `.agents/project-context.md` / `.agents/references.md`.
+* Re-run only test file(s) added or modified across the completed plan. Do not run the full test suite, an entire package suite, or unrelated existing tests unless the user explicitly asks.
+* Run the project's changed-file lint/style/type checks from `.agents/project-context.md` / `.agents/references.md`; keep them targeted to changed files when the tooling supports it.
 * Prefer `.agents/scripts/run_checks_changed.sh` when applicable.
 * If `aislop` MCP is available, scan and compare with baseline; otherwise use a local `aislop` script only if explicitly configured.
 
 ## Diff budget
 
-Default single-issue budget: >6 changed files or >150 changed non-test lines.
+Default completed-plan review budget: >12 changed files or >300 changed non-test lines.
 
 * justified by plan/criteria -> note only;
 * unjustified -> `NEEDS CHANGES` and route to `planner` if scope must change/split.
@@ -90,7 +96,7 @@ Default single-issue budget: >6 changed files or >150 changed non-test lines.
 
 ## Verdicts
 
-* `PASS`: plan + issue satisfied; relevant checks green; required PR Lens review completed; no actionable finding; task state accurate.
+* `PASS`: active plan + all completed issues satisfied; targeted checks green; any required PR Lens/runtime review completed; no actionable finding; task state accurate.
 * `NEEDS CHANGES`: fixable issue remains.
 * `BLOCKED`: a decision/context gap prevents a valid review.
 
@@ -108,8 +114,8 @@ On `NEEDS CHANGES`, return exactly one ready-to-use prompt.
 
 For `implement` include:
 
-* active issue;
-* acceptance criteria;
+* affected issue(s);
+* relevant acceptance criteria;
 * all required changes with file/symbol;
 * missing/failing test;
 * smallest expected command;
@@ -117,7 +123,7 @@ For `implement` include:
 
 For `planner` include:
 
-* active plan + issue;
+* active plan + affected issue(s);
 * exact problem in source of truth;
 * evidence;
 * requested outcome (update/split/follow-up);
@@ -125,29 +131,42 @@ For `planner` include:
 
 ## Output
 
-Use this compact report format:
+For `PASS`, return a compact handoff, maximum 5 lines:
 
 ```text
-Verdict: PASS | NEEDS CHANGES | BLOCKED
+Verdict: PASS
+Checks: <short PASS summary>
+PR Lens: <artifact path> | NOT_USED
+Next: <one action>
+```
+
+For `NEEDS CHANGES` or `BLOCKED`, return a targeted diagnostic with enough detail
+to fix or route the problem safely:
+
+```text
+Verdict: NEEDS CHANGES | BLOCKED
 
 Findings:
-- [severity] <file[:line]> — <short finding>
+- [severity] <file[:line]> — <concrete finding + impact>
+
+Evidence:
+- <relevant file/symbol/check/PR Lens observation>
 
 Checks:
 - <command> — PASS | FAIL
 
 PR Lens: <artifact path> | NOT_USED
-
-Next:
-- <one action>
+Next: <one required action>
 ```
 
 Rules:
 
-* omit `Findings` when empty;
-* maximum one short bullet per distinct problem;
+* successful output stays compact; diagnostic output may exceed 5 lines when needed;
+* omit `Findings` and `Evidence` when empty;
+* maximum one concise bullet per distinct problem;
 * severity order: blocker -> important -> minor;
 * on `NEEDS CHANGES`, append exactly one `implement prompt:` or `planner prompt:` block;
 * on `BLOCKED`, ask one blocking question instead;
+* include cause/evidence/impact needed to act, but never a chronological review log;
 * no "what is good" section unless a positive fact is needed to disambiguate a finding;
 * no essay.

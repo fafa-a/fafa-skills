@@ -49,7 +49,8 @@ with one compact workflow.
 * Do not install dependencies.
 * Do not create huge plans.
 * Do not split work into fake issues.
-* Do not create a plan or issue files before the user answers the blocking questions.
+* Do not create plan or issue files before the user answers the blocking questions.
+* Do not create issue files until every proposed plan step has been explicitly approved by the user.
 * Do not mark a plan ready for implementation without explicit user approval.
 * Do not interpret silence, a generic acknowledgement, or a request to continue as approval.
 
@@ -98,6 +99,45 @@ Record a short reconnaissance note in your working context before questioning:
 `Observed`, `Likely impact`, `Unknown`, and `Files inspected`. Do not write it
 to the plan yet; the plan does not exist until clarification is complete.
 
+### Token-aware reconnaissance budget
+
+Optimize for the smallest amount of repository reading that can safely support
+the next decision.
+
+If the user's prompt already includes concrete files, symbols, expected
+behavior, constraints, or prior analysis from another agent/Tech Lead, treat it
+as a prepared task:
+
+* verify the cited files/symbols first;
+* do not repeat repository-wide reconnaissance by default;
+* do not re-ask decisions already stated clearly in the prompt;
+* expand the search only when the supplied context conflicts with the code,
+  leaves a behavior-changing ambiguity, or misses a required dependency/boundary.
+
+For a normal task:
+
+* start with at most 3-5 directly relevant files before the first clarification
+  question or first plan-step proposal;
+* read additional files only when they are necessary to resolve a concrete
+  unknown that can change scope, behavior, API, architecture, or acceptance
+  criteria;
+* do not reopen files already read unless they changed or a specific unresolved
+  question requires it;
+* prefer the smallest useful excerpt/read over broad file dumps.
+
+Subagents and documentation are escalation tools, not default steps:
+
+* use `explore` only when targeted local search cannot locate the relevant code;
+* use `pattern-scout` only when a repository precedent is actually needed and
+  cannot be established with a small local read;
+* use Context7 only when exact external API/version behavior is uncertain and
+  repository usage/source does not already answer it;
+* use `general` only when Context7/official docs are insufficient for a concrete
+  blocker.
+
+Do not spend tokens proving facts that are already established by the prompt,
+the inspected code, or an existing repository pattern.
+
 ## Find existing repository patterns
 
 Before proposing a new structure or API, determine whether the repository already
@@ -109,10 +149,13 @@ responsibility and conventions, not superficial deduplication.
 
 ## Inspect available libraries
 
-Before writing the plan, inspect which libraries are already installed that are relevant to the task:
+Before writing the plan, inspect only dependencies directly involved in the
+task and only when their API/type behavior affects implementation decisions:
 
-* For each relevant dependency, note key types, functions, and patterns it exposes.
-* Document them in the plan so `implement` does not need to guess or reinvent.
+* note only the key types, functions, or patterns `implement` actually needs;
+* prefer existing repository usage over additional documentation reads;
+* skip dependency inspection entirely when no external/library behavior is
+  relevant to the change.
 
 Example output:
 
@@ -136,8 +179,8 @@ challenge and what to avoid.
 
 ### Question depth: risk-based, not vibes-based
 
-Use the aggressive mode (5-10 decision-forcing questions) if reconnaissance
-shows ANY of:
+Use the aggressive mode (3-5 decision-forcing questions, only for unresolved
+behavior-changing decisions) if reconnaissance shows ANY of:
 
 * touches authentication, authorization, or permission checks
 * touches payment, billing, or money-affecting logic
@@ -146,8 +189,8 @@ shows ANY of:
 * touches more than one service/module boundary
 * security-sensitive I/O (file paths, shell commands, deserialization, SQL)
 
-Use the light mode (1-2 questions, or zero if truly unambiguous) only when
-reconnaissance proves ALL of:
+Use the light mode (1-2 questions, or zero if the prompt/code already makes
+the task unambiguous) when reconnaissance proves ALL of:
 
 * single file or single narrow module
 * no schema/data/API contract change
@@ -172,6 +215,8 @@ vs. mid-execution blocker there).
 * Stop only when every decision that changes behavior, scope, data, or API is
   answered or explicitly delegated to an assumption the user accepts.
 * Do not ask questions you could answer yourself by reading the codebase.
+* Do not ask questions already answered explicitly in the user's prepared prompt
+  or locked decisions.
 * Ask exactly one question at a time, using the `question` tool, and wait for
   the answer before asking the next one. Do not dump a list of questions in a
   single message. If an answer reveals a new affected area, scan that area
@@ -224,6 +269,31 @@ For external library or tool documentation:
 * if Context7 is insufficient, use upstream source or official documentation
   rather than guessing
 
+## Interactive plan-step approval
+
+After clarification is complete and before creating issues, draft the ordered
+plan steps in working context and validate them with the user one at a time.
+
+For each step:
+
+1. Present exactly one plan step with its goal, main affected area, and intended
+   outcome. Keep it concise; do not include issue-level implementation detail.
+2. Use the `question` tool with short options:
+   * `Approve step`
+   * `Change step`
+   * `Discuss`
+3. Wait for the user's answer before presenting the next step.
+4. On `Change step` or `Discuss`, resolve the feedback, revise that same step,
+   and present it again for explicit approval.
+5. Only an explicit `Approve step` locks the step.
+
+Do not present all steps at once for approval. Do not create the issue breakdown
+until every plan step is locked.
+
+After all steps are approved, generate the issue breakdown from those approved
+steps, write the plan/issues/current-task files, then ask for one final approval
+of the complete plan + issue mapping before implementation is authorized.
+
 ## Plan file structure
 
 Every plan must include a `## Available library types/APIs` section listing key types, functions, and patterns from dependencies relevant to the task.
@@ -251,7 +321,8 @@ It must answer:
 
 ## Issue breakdown
 
-Create `.agents/issues/<task-slug>.md`.
+Create `.agents/issues/<task-slug>.md` only after every plan step has been
+explicitly approved.
 
 Issues are local TDD tasks, not GitHub issues.
 
@@ -293,31 +364,40 @@ Write or update:
 .agents/state/current-task.md
 ```
 
-Write these files only after clarification is complete. Set:
+Write these files only after clarification is complete and every plan step is
+explicitly approved. Set:
 
 * plan `Status: READY` and `Approval Status: AWAITING_APPROVAL`
 * current task `Status: AWAITING_APPROVAL`
 * issue statuses `TODO`
 
 The active issue is selected for implementation, but is not authorized to run.
-Ask for approval using the `question` tool with explicit, unambiguous
-options, e.g.:
+After the approved plan steps have been converted into issues, ask for final
+approval of the complete plan + issue mapping using the `question` tool with
+explicit, unambiguous options, e.g.:
 
-* `Approve — start issue 1`
+* `Approve — start implementation`
 * `Not yet`
 
 Never interpret silence, a generic acknowledgement, or a request to continue
 as approval — only the explicit "approve" option counts. Record the exact
 answer and date in the plan and set current task status to `READY` only after
-receiving it. A changed plan, issue list, or scope invalidates the approval
-and returns the task to `AWAITING_APPROVAL`.
+receiving it. A changed approved plan step, issue list, or scope invalidates
+the final approval and returns the task to `AWAITING_APPROVAL`; any changed
+plan step must be approved again before issues are regenerated.
 
 ## Session boundary
 
-Do not hand off to `implement` in the current conversation. After the plan
-and issues are written, tell the user to open another terminal/session and run
-the implementation agent there, providing the plan slug and active issue. This
-keeps planning evidence and implementation context separate.
+Do not implement in the current planner session. Implementation must always run
+in a fresh `implement` session.
+
+- When invoked by `orchestrator`, return control to `orchestrator`; it owns the
+  fresh `implement` child session and already has the task state on disk. Do not
+  restate the full plan/issues in the handoff.
+- When invoked directly by the user, tell the user to start `implement` in a
+  fresh session. The new session resolves the active plan and issue from
+  `.agents/state/current-task.md`; do not make the user repeat context already
+  stored in task files.
 
 Do not update `.agents/project-context.md` for task-specific discoveries by
 default. Preserve important discoveries in the plan under `Reconnaissance` and
@@ -336,33 +416,37 @@ Initialize `.agents/state/current-task.md` with:
 
 ## Output
 
-Return a compact planning report only:
+Keep the normal path extremely compact. The plan, issues, and current task files
+are the durable source of truth; output only the handoff needed by the user or
+`orchestrator`.
+
+On a ready/approved plan, return at most these five lines:
 
 ```text
-Plan: <path>
-Issues: <path>
-Mode: <Bugfix | Feature | Refactor | Test-only | Spike>
-Decisions:
-- <short locked decision>
-Issues:
-1. <issue> — <one-line goal>
-2. <issue> — <one-line goal>
-Approval: AWAITING_APPROVAL | APPROVED
-Next: <one action>
-
-Orchestrator summary:
-Goal: <one sentence>
-Steps:
-1. <short implementation step>
-2. <short implementation step>
-Affected: <main files/modules only>
-Acceptance: <compact acceptance criteria>
+Status: READY | APPROVED
+Plan: <slug/path> | Issues: <count> | Mode: <mode>
+Decisions: <short locked decisions, one line>
+Summary: <goal>; Steps: 1) <step>; 2) <step>; ...; Affected: <areas>; Acceptance: <criteria>
+Next: <approval action | orchestrator | implement>
 ```
 
-The `Orchestrator summary` is a compact projection of the approved plan for direct
-user display. Preserve every ordered implementation step, but do not repeat
-reconnaissance, rationale, library notes, or other plan prose.
+`Summary` is the `Orchestrator summary`: a compact projection for direct user
+display. Preserve every ordered implementation step, but keep them on the same
+line when practical. Do not repeat reconnaissance, rationale, library notes,
+issue bodies, or other plan prose. `orchestrator` may display this line directly
+without re-reading or re-summarizing the plan.
 
-Omit empty sections. Use short bullets/numbered items. No prose recap.
-Blocking clarification must use one question at a time; closed choices use the
-question tool with short options.
+When blocked or when planning/diagnosis fails, detail is allowed and expected.
+Report only actionable diagnostic information:
+
+```text
+Status: BLOCKED
+Cause: <root cause or missing decision>
+Evidence: <file/symbol/fact>
+Impact: <what cannot proceed or would be unsafe to assume>
+Need: <one decision or action required>
+```
+
+Do not narrate search history, reasoning steps, or tool usage. Omit empty fields.
+Blocking clarification still uses exactly one question at a time; closed choices
+use the question tool with short options.

@@ -26,7 +26,7 @@ Before doing anything else, read this SKILL.md in full.
 - Do not make unrelated changes.
 - Do not add dependencies unless the plan explicitly allows it.
 - Do not rewrite, redefine, or wrap library types. Use them as-is.
-- Do not continue through multiple issues by default.
+- Execute all remaining TODO issues for the active plan in the same implement session unless blocked or explicitly told to stop.
 - Do not narrate the rules or the process. Report facts and results, not
   intentions.
 
@@ -45,15 +45,17 @@ If current task status is `NONE`, `DONE`, or empty:
 - stop
 - do not search for random work
 
-You must read the active plan file in full before opening the active issue
-file. Do not start the TDD cycle having read only the issue.
+At the start of a new implement session, read the active plan once, then read
+the active issue. The plan remains the session-level source of truth and must
+not be re-read for every subsequent issue.
 
-- Resolve the plan path from `current-task.md`'s `Active Plan` field. Read
-  that file before the issue file, every time — even if you were only given
-  an issue name/number.
-- If `current-task.md` is missing, stale, or does not name a plan for the
-  issue you were given, fall back to the issue file's `Related Plan` field to
-  find and read the plan.
+- Resolve the plan path from `current-task.md`'s `Active Plan` field and read it
+  once before starting the first issue in this session.
+- For each later issue in the same plan, read only `current-task.md` and that
+  issue unless the plan changed, the issue is ambiguous, or a blocker requires
+  plan-level context.
+- If `current-task.md` is missing, stale, or does not name a plan, fall back to
+  the issue file's `Related Plan` field.
 
 If active plan or active issue cannot be found:
 
@@ -70,12 +72,15 @@ After reading the active issue, check available domain skills and load only thos
 Default mode:
 
 ```text
-one issue → one TDD cycle → stop
+one plan → one implement session → sequential TDD cycles → stop when plan is complete
 ```
 
-Do not complete multiple issues unless the user explicitly asks.
+Start with the active issue from `current-task.md`. When an issue is DONE, move
+directly to the next TODO issue in the same plan without starting a new agent
+session or asking the user to restate context.
 
-If multiple issues are ready, continue only with the active issue from `current-task.md`.
+Stop early only when blocked, when the plan changes materially, or when the user
+explicitly asks to stop.
 
 ## TDD cycle
 
@@ -87,27 +92,29 @@ For the active issue:
 2. Set `current-task.md` status to `IN_PROGRESS`.
 3. Inspect only directly relevant files and confirm the issue assumptions still match current code. If the issue names an existing precedent, verify it. If the intended repository pattern is unclear or the named precedent is stale, call `pattern-scout` once with the narrow question before coding. If reality changes scope or approach, block instead of silently re-planning.
 4. Write or update one failing test first.
-5. Run the smallest relevant test command.
+5. Run only the test file(s) added or modified for the active issue, using the smallest command that targets them directly. Do not run the full test suite, an entire package test suite, or unrelated existing tests unless the user explicitly asks.
 
 Command selection guidance:
 
 - When the project has a detected Bun environment (e.g. `bun.lock`, or project-context.md lists Bun as the preferred runtime), prefer running tests and scripts with `bun` (e.g. `bun test`, `bun run <script>`) rather than node/npm/pnpm/yarn. Do not change the project's declared preference if it explicitly uses a different manager.
 - If the detected project tooling is ambiguous, do not guess — consult the user or `planner`/`manage-project-context` output (project-context.md) before choosing a command.
-1. Confirm the test fails for the expected reason.
+1. Confirm the changed/added test fails for the expected reason.
 2. Implement the smallest change.
-3. Run the test again.
+3. Run only the changed/added test file(s) again.
 4. Refactor only if needed for clarity.
-5. Run the relevant checks.
+5. Run the relevant changed-file checks.
 
 Checks guidance:
 
-- After the test is green, run linting and style checks at least on the changed files (not necessarily the whole repo) to catch formatting, typing, or obvious issues introduced by the change. Use the project's preferred command from `project-context.md` (for JS/TS, prefer `bun`-based commands when Bun is the preferred runtime).
+- After the changed/added test is green, run linting and style checks only on the changed files when the tooling supports targeted checks. Do not broaden to repo-wide or package-wide checks by default. Use the project's preferred command from `project-context.md` (for JS/TS, prefer `bun`-based commands when Bun is the preferred runtime).
 - If the `aislop` MCP tool set is available in this session, call the mechanical-fix tool (non-aggressive mode only) before manual checks — it clears formatting/lint/ai-slop issues deterministically without spending review effort on them. Never use the aggressive mode; it can delete files or rewrite `package.json`.
 - If the `aislop` MCP tool set is not available, fall back to a project-local `aislop` script only when it is explicitly present (package.json scripts or project-context.md). Do not invent or run unknown scripts.
 
 See `.agents/references.md` for concrete commands and a safe example script to run checks only on changed/new files. If `.agents/scripts/run_checks_changed.sh` exists, prefer using it to ensure consistent behavior across agents.
-11. Update `.agents/state/current-task.md`.
-12. Stop.
+11. Update `.agents/state/current-task.md` and the issue status.
+12. If another TODO issue exists in the same plan, set it as `Active Issue` and
+    immediately start its TDD cycle in this same session.
+13. Stop only when all issues are DONE or execution is blocked.
 
 ## Red phase
 
@@ -233,8 +240,10 @@ If `current-task.md` status is `BLOCKED` at startup:
 
 When implementation changes visible UI, layout, positioning, interaction, or browser behavior:
 
-- use the `chrome-devtools` skill and Chrome DevTools MCP to verify the result in the running application;
-- reproduce the relevant interaction when needed;
+- use Playwright CLI first to verify the affected user-visible behavior;
+- keep the Playwright flow narrow: reproduce only the interaction changed by the active issue;
+- use the `chrome-devtools` skill and Chrome DevTools MCP only when Playwright CLI cannot verify the behavior, fails in a way that needs browser-level diagnosis, or deeper runtime inspection is required;
+- do not use both tools by default;
 - verify the observable result instead of relying only on code inspection;
 - fix any regression introduced by the implementation before handing off to Reviewer.
 
@@ -264,21 +273,19 @@ Status transitions:
 - code done, checks green: `Status: DONE`, `Last Command`, `Next Step`
 - blocked: `Status: BLOCKED`, `Current Failure` = the blocker
 
-On `Status: DONE`, also look at the active issues file
+On issue completion, look at the active issues file
 (`.agents/issues/<task-slug>.md`) for the next issue with `Status: TODO`:
 
-- if one exists, set `Next Step` to name it explicitly (e.g. `Issue 2 -
-  <title> is next, TODO`) — do not start it, just record it so the next
-  session does not need the issue number restated
-- if none exists (all issues `DONE`), set `Next Step` to say the plan is
-  fully implemented and recommend `reviewer`
+- if one exists, set it as `Active Issue`, set `Next Step` to that issue, and
+  continue it immediately in the same implement session;
+- if none exists, set `Status: DONE` and `Next Step` to say the plan is fully
+  implemented and ready for `reviewer`.
 
-### Resuming with "continue" / "next"
+### Resuming after an interruption
 
-If the user says "continue" or "next" without naming an issue number, and
-`current-task.md`'s `Next Step` already names the next issue (from the rule
-above), use that issue — do not ask the user to repeat the number. Only ask
-for a number if `Next Step` is ambiguous or does not name a specific issue.
+If the implement session is interrupted and later resumed, use `Active Issue`
+and `Next Step` from `current-task.md`; do not ask the user to repeat an issue
+number already recorded there.
 
 Also update the issue file (`Status:` line in `.agents/issues/<task-slug>.md`) to match: `TODO` → `IN_PROGRESS` → `DONE` or `BLOCKED`.
 
@@ -286,13 +293,28 @@ Keep `current-task.md` short.
 
 ## Output
 
-Report only, in this order, one line each:
+On successful completion of the full plan, keep the handoff extremely compact:
+maximum 5 lines, one fact per line, in this order when relevant:
 
-- issue completed or blocked
-- test added or changed (file + name)
-- implementation summary (1 line)
-- command run
-- next step
+- `DONE: <plan> | Issues: <count>`
+- `Tests: <changed/added test files only>`
+- `Changed: <one-line implementation summary>`
+- `Checks: <targeted command/result>`
+- `Next: reviewer`
 
-No preamble, no restating the rules, no decorative summary. If nothing
-noteworthy happened in a category, omit the line instead of padding it.
+Do not emit a user-facing handoff after each successful issue; update the task
+Markdown and continue to the next issue.
+
+On `BLOCKED` or execution/check failure, switch to a targeted diagnostic. Include
+only the sections needed to continue safely:
+
+- `BLOCKED` or `ERROR: <issue>`
+- `Cause: <concrete cause>`
+- `Evidence: <file/symbol/error>`
+- `Tried: <short list of relevant attempts>` when useful
+- `Failing check: <command + relevant failure>` when applicable
+- `Need:` or `Next: <decision/action required>`
+
+Failure output may exceed 5 lines when the extra detail is required to diagnose
+or hand off the problem. Do not narrate the investigation, restate rules, or
+include a chronological work log. Omit empty sections.
